@@ -3,18 +3,20 @@ from utils import variance, get_intersection
 import numpy as np
 from math import floor, ceil
 
+"""
+TODO:
+""" 
+
 class segmentedLinearRegressor:
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, verbose=False):
         self.points = []
         self.parameters = [] # y = k * x + b, [k, b]
         self.segments = []
         self.param_count = 0
         self.interval = []
-        self.verbose = False
-
-    def set_verbose(self, verbose):
         self.verbose = verbose
+        self.segments_count = 0
 
     def clear_state(self):
         self.parameters = []
@@ -24,6 +26,7 @@ class segmentedLinearRegressor:
 
     def process(self, segments_count):
         self.clear_state() # ensure you to process multiple times without having to create a new instance of regressor
+        self.segments_count = segments_count
         self.interval.append(int(floor(min([i[0] for i in self.points]))))
         self.interval.append(int(ceil(max([i[0] for i in self.points]))))
         step = (self.interval[1] - self.interval[0]) / float(segments_count)
@@ -35,7 +38,7 @@ class segmentedLinearRegressor:
         a = [] # Ax = b, a will be used to generate A
         b = []
         for i in range(segments_count): # generate the first segments_count * 2 rows
-            two_rows,  two_elems = self.getRows(i, step, dimension) # i is the segment count
+            two_rows,  two_elems = self.getRows(i, dimension) # i is the segment count
             a += two_rows
             b += two_elems
         for i in range(segments_count - 1):
@@ -59,11 +62,17 @@ class segmentedLinearRegressor:
             print(result)
             print("\nb: ")
             print(b)
+            print("\nSegments: " + str(segments_count))
+            print("\nk and b: ")
+            print([[round(i[0], 3), round(i[1], 3)]for i in self.parameters])
+            print("\nInterval: ")
+            print(self.interval)
 
-    def getRows(self, index, step, dimension):
+    def getRows(self, index, dimension):
         row1 = [0 for i in range(dimension)]
         row2 = [0 for i in range(dimension)]
-        left = index * step + self.interval[0]
+        step = (self.interval[1] - self.interval[0]) / float(self.segments_count)
+        left = self.interval[0] + step * index
         right = left + step
         self.segments.append([left, right])
         points = [p for p in self.points if left <= p[0] < right]
@@ -82,19 +91,11 @@ class segmentedLinearRegressor:
         two_elems[1] = sum([i[1] for i in points])
         return [row1, row2], two_elems
 
-    def get_points(self, points):
-        # points: [[x1, y1], [x2, y2]......[xn, yn]]
-        self.points = points
-
-    def get_points(self, path):
-        pc = pypcd.PointCloud.from_path(path)
-        self.points = [[i['x'], i['y']] for i in pc.pc_data]
-
-    def filter(self, x_low, x_high, y_low, y_high):
-        self.points = [i for i in self.points if x_low <= i[0] <= x_high and y_low <= i[1] <= y_high]
-
     def get_result(self):
         return self.parameters
+
+    def set_points(self, points):
+        self.points = points
 
     def get_intersections(self):
         x = []
@@ -114,12 +115,12 @@ class segmentedLinearRegressor:
                 intersection = get_intersection(param1, param2)
                 x.append(intersection[0])
                 y.append(intersection[1])
-        return x, y
+        return [[i, j] for i, j in zip(x, y)]
 
 if __name__ == "__main__":
     regressor = segmentedLinearRegressor()
-    regressor.get_points('0.pcd')
-    regressor.filter(float('-inf'), float('inf'), 2.5, 4)
+    regressor.points = [[i['x'], i['y']] for i in pypcd.PointCloud.from_path('0.pcd').pc_data]
+    regressor.points.filter(float('-inf'), float('inf'), 2.5, 4)
     for segments_count in range(1, 13):
         regressor.process(segments_count)
         print("\nsegments_count: " + str(round(segments_count, 3)) + \
