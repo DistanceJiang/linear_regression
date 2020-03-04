@@ -27,6 +27,15 @@ class BlockMarkerInterface:
         pass
 
 
+class BlockMarker(BlockMarkerInterface):
+
+    def mark(self):
+        """
+        Implement here
+        """
+        pass
+
+
 class Block:
 
     """

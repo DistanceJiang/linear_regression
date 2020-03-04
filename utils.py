@@ -1,3 +1,8 @@
+import pypcd
+
+def get_points_from_pcd(path):
+    return [[i['x'], i['y']] for i in pypcd.PointCloud.from_path(path).pc_data]
+
 def get_intersection(line1, line2):
     # y = ax + b, line = [a, b]
     if line1[0] == line2[0]:
