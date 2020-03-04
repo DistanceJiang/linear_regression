@@ -1,10 +1,10 @@
 # coding=utf-8
 
 """
-grid_marker.py 主要用来实现对地图点分网格进行标记
+block_marker.py 主要用来实现对地图点分网格进行标记
 """
 
-class GridMarkerInterface:
+class BlockMarkerInterface:
 
     """
     需要实现这个接口，来对点进行标记
@@ -30,7 +30,7 @@ class GridMarkerInterface:
 class Block:
 
     """
-    GridMarker的输出，包含一个网格中的数据点，网格的位置（以左上角点的坐标为准），网格中点的斜率
+    BlockMarker的输出，包含一个网格中的数据点，网格的位置（以左上角点的坐标为准），网格中点的斜率
     """
 
     def __init__(self, slope, points, position):
