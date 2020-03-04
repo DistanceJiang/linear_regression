@@ -5,6 +5,11 @@ from matplotlib import style
 from utils import get_intersection, get_xy_lim
 from regression_control import simpleRegressionController
 
+"""
+TODO:
+1. show background grid
+"""
+
 verbose = True
 
 # Linear regression

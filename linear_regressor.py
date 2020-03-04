@@ -1,5 +1,5 @@
 import pypcd
-from utils import variance, get_intersection
+from utils import variance, get_intersection, filter_points
 import numpy as np
 from math import floor, ceil
 
@@ -120,7 +120,7 @@ class segmentedLinearRegressor:
 if __name__ == "__main__":
     regressor = segmentedLinearRegressor()
     regressor.points = [[i['x'], i['y']] for i in pypcd.PointCloud.from_path('0.pcd').pc_data]
-    regressor.points.filter(float('-inf'), float('inf'), 2.5, 4)
+    regressor.points = filter_points(regressor.points, float('-inf'), float('inf'), 2.5, 4)
     for segments_count in range(1, 13):
         regressor.process(segments_count)
         print("\nsegments_count: " + str(round(segments_count, 3)) + \

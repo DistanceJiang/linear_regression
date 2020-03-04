@@ -1,10 +1,15 @@
 from linear_regressor import segmentedLinearRegressor
-from utils import filter
+from utils import filter_points
 import pypcd
 
 class regressionControllerBase():
 
     def __init__(self, path, verbose=False):
+        """
+        Initialization
+        @param path: pcd file path
+        @param verbose: if True, print more information in the console
+        """
         self.points = [[i['x'], i['y']] for i in pypcd.PointCloud.from_path(path).pc_data]
         self.verbose = verbose
         self.regressors = []
@@ -16,9 +21,17 @@ class regressionControllerBase():
         return self.points
 
     def fit(self):
+        """
+        Use linear regressor to fit the points
+        @return: list of intersection list
+        """
         pass
 
     def get_parts(self):
+        """
+        Divide all points into parts to fit
+        @return: list of points list
+        """
         pass
 
 
@@ -48,6 +61,6 @@ class simpleRegressionController(regressionControllerBase):
             [float('-inf'), float('inf'), 3, 4]]
         parts = []
         for limit in limits:
-            parts.append(filter(self.points, limit[0], limit[1], limit[2], limit[3]))
+            parts.append(filter_points(self.points, limit[0], limit[1], limit[2], limit[3]))
         return parts
         

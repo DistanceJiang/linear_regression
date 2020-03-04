@@ -19,7 +19,7 @@ def variance(points, lines, segements):
             result += pow(diff_vertically(point, line), 2)
     return result
 
-def filter(points, x_low=float('-inf'), x_high=float('inf'), y_low=float('-inf'), y_high=float('inf')):
+def filter_points(points, x_low=float('-inf'), x_high=float('inf'), y_low=float('-inf'), y_high=float('inf')):
     result = [i for i in points if x_low <= i[0] < x_high and y_low <= i[1] < y_high]
     return result
 

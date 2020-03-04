@@ -1,4 +1,4 @@
 {
-    "python.pythonPath": "/Users/jiangzijian/lab/radar/linear_regression/venv/bin/python2.7",
+    "python.pythonPath": "venv/bin/python",
     "git.ignoreLimitWarning": true
 }
