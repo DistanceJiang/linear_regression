@@ -12,7 +12,8 @@ TODO:
 verbose = True
 
 # Linear regression
-controller = simpleRegressionController('four_walls.pcd', verbose)
+controller = simpleRegressionController(path='four_walls.pcd', verbose=verbose, segments_count=1)
+controller.set_parts()
 intersections = controller.fit()
 
 # set figure

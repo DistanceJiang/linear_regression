@@ -1,4 +1,5 @@
 import pypcd
+import numpy as np
 
 def get_points_from_pcd(path):
     return [[i['x'], i['y']] for i in pypcd.PointCloud.from_path(path).pc_data]
@@ -32,6 +33,14 @@ def get_xy_lim(points):
     x = [i[0] for i in points]
     y = [i[1] for i in points]
     return [min(x), max(x), min(y), max(y)]
+
+def get_rotation_matrix(deg):
+    # counter-clockwise rotation matrix
+    theta = np.radians(deg)
+    c, s = np.cos(theta), np.sin(theta)
+    R = np.array([[c, -s], [s, c]])
+    return R
+
 
 if __name__ == "__main__":
     line1 = [0.04215221435099827, 3.2913937185356628]

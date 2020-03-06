@@ -9,8 +9,9 @@ TODO:
 
 class segmentedLinearRegressor:
 
-    def __init__(self, verbose=False):
+    def __init__(self, part=None, verbose=False):
         self.points = []
+        if part is not None: self.points = part.points
         self.parameters = [] # y = k * x + b, [k, b]
         self.segments = []
         self.param_count = 0
