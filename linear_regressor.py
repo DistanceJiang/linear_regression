@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import pypcd
 from utils import variance, get_intersection, filter_points
 import numpy as np
@@ -10,6 +12,10 @@ TODO:
 class segmentedLinearRegressor:
 
     def __init__(self, part=None, verbose=False):
+        """
+        @param part: ContinuousPart, contians the points to fit
+        @param verbose: if True, print the mid results
+        """
         self.points = []
         if part is not None: self.points = part.points
         self.parameters = [] # y = k * x + b, [k, b]
@@ -20,16 +26,24 @@ class segmentedLinearRegressor:
         self.segments_count = 0
 
     def clear_state(self):
+        """
+        Used to clear the result of processing, to allow process with different segments_count multiple times
+        """
         self.parameters = []
         self.segments = []
         self.param_count = 0
         self.interval = []
 
     def process(self, segments_count):
+        """
+        用拉格朗日乘数法，对点进行分段线性拟合
+        @param segments_count: number of segments to process
+        @return: list of intersections
+        """
         self.clear_state() # ensure you to process multiple times without having to create a new instance of regressor
         self.segments_count = segments_count
-        self.interval.append(int(floor(min([i[0] for i in self.points]))))
-        self.interval.append(int(ceil(max([i[0] for i in self.points]))))
+        self.interval.append(int(min([i[0] for i in self.points])))
+        self.interval.append(int(max([i[0] for i in self.points])))
         step = (self.interval[1] - self.interval[0]) / float(segments_count)
         x = [i[0] for i in self.points]
         y = [i[1] for i in self.points]

@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -7,6 +9,7 @@ from regression_control import simpleRegressionController
 """
 TODO:
 1. show background grid
+2. show four walls as rectangle
 """
 
 verbose = True

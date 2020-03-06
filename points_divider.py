@@ -22,14 +22,24 @@ class ContinuousPart:
 
 class PointsDividerInterface:
 
+    """
+    将点集分为需要拟合的部分，每个部分由ContinuousPart表示
+    """
+
     def __init__(self):
         self.blocks = []
         self.points = []
 
     def set_points(self, points):
+        """
+        points为需要分块的点集
+        """
         self.points = points
 
     def set_blocks(self):
+        """
+        blocks为包含block_marker.py中的Block的列表，包含对于小方格的标记
+        """
         marker = BlockMarker()
         marker.get_points(self.points)
         self.blocks = marker.mark()

@@ -1,3 +1,5 @@
+# coding=utf-8
+
 from linear_regressor import segmentedLinearRegressor
 from points_divider import *
 from utils import filter_points, get_rotation_matrix
@@ -25,6 +27,9 @@ class regressionController():
 
     def get_points(self):
         return self.points
+
+    def set_points(self, points):
+        self.points = points
 
     def fit(self):
         """

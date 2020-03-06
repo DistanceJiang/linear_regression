@@ -17,12 +17,15 @@ class BlockMarkerInterface:
         self.resolution = resolution
 
     def set_points(self, points):
+        """
+        需要被标记的点集
+        """
         self.points = points
 
     def mark(self):
         """
         To be Implemented by subclasses
-        @return: list of blocks
+        @return: 包含Block的二维数组
         """
         pass
 
@@ -32,6 +35,7 @@ class BlockMarker(BlockMarkerInterface):
     def mark(self):
         """
         Implement here
+        @return: 包含Block的二维数组
         """
         pass
 
@@ -46,7 +50,7 @@ class Block:
         """
         @param slope: 网格中点的斜率
         @param points: 网格中的数据点
-        @param position: 网格左上角的坐标
+        @param position: 网格左上角的坐标, [x, y]
         """
         self.slope = slope
         self.points = points
