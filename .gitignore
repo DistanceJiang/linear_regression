@@ -1,3 +1,4 @@
+.idea
 venv/.Python
 venv/bin/activate
 venv/bin/activate_this.py
