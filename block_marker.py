@@ -54,7 +54,7 @@ class BlockMarker(BlockMarkerInterface):
         @return: 包含Block的二维数组
         """
         self.cal_import_message()
-        self.filter_points()
+        return self.filter_points()
 
     def cal_import_message(self):
         x_points = list()
