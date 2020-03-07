@@ -43,8 +43,19 @@ def get_rotation_matrix(deg):
     R = np.array([[c, -s], [s, c]])
     return R
 
+def rotate_line(line, deg):
+    """
+    @param line: [k, b]
+    @param deg: degrees to rotate, counter clockwise
+    """
+    theta = np.deg2rad(deg)
+    coef_a = line[0] * np.cos(theta) + np.sin(theta)
+    coef_b = np.cos(theta) - line[0] * np.sin(theta)
+    k = coef_a / coef_b
+    b = line[1] / coef_b
+    return [k, b]
+
 
 if __name__ == "__main__":
-    line1 = [0.04215221435099827, 3.2913937185356628]
-    line2 = [0.0363115245946237, 3.297234408292037]
-    print(get_intersection(line1, line2))
+    line = [0.02521118603829011, -4.412689704966222]
+    print(rotate_line(line, 90))

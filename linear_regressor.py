@@ -106,7 +106,7 @@ class segmentedLinearRegressor:
         two_elems[1] = sum([i[1] for i in points])
         return [row1, row2], two_elems
 
-    def get_result(self):
+    def get_parameters(self):
         return self.parameters
 
     def set_points(self, points):
