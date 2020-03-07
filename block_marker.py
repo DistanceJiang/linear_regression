@@ -54,7 +54,7 @@ class BlockMarker(BlockMarkerInterface):
         @return: 包含Block的二维数组
         """
         self.cal_import_message()
-        self.filter_points()
+        return self.filter_points()
 
     def cal_import_message(self):
         x_points = list()
@@ -72,7 +72,7 @@ class BlockMarker(BlockMarkerInterface):
         res = []
 
         for m in range(self.row-1, -1, -1):
-            temp_dimension = list()
+            temp = list()
             for n in range(self.col):
                 count = 0
                 one_list_points = list()
@@ -120,7 +120,8 @@ class BlockMarker(BlockMarkerInterface):
                     block.set_points([])
                     block.set_slope("null")
                     block.set_position((m, n))
-                res.append(block)
+                temp.append(block)
+            res.append(temp)
         return res
 
     def get_dis(self, point_X, point_Y, line_X1, line_Y1, line_X2, line_Y2):
