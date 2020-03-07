@@ -48,8 +48,8 @@ class Block:
 
     def __init__(self, slope, points, position):
         """
-        @param slope: 网格中点的斜率
-        @param points: 网格中的数据点
+        @param slope: 网格中点的斜率；若Block为空，则slope=null
+        @param points: 网格中的数据点；若Block为空，则points=[]
         @param position: 网格的二维索引, [i， j]
         """
         self.slope = slope
