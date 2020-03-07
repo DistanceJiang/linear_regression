@@ -43,14 +43,14 @@ class BlockMarker(BlockMarkerInterface):
 class Block:
 
     """
-    BlockMarker的输出，包含一个网格中的数据点，网格的位置（以左上角点的坐标为准），网格中点的斜率
+    BlockMarker的输出，包含一个网格中的数据点，网格的位置（实际上是网格在二维数组中的二维索引），网格中点的斜率
     """
 
     def __init__(self, slope, points, position):
         """
         @param slope: 网格中点的斜率
         @param points: 网格中的数据点
-        @param position: 网格左上角的坐标, [x, y]
+        @param position: 网格的二维索引, [i， j]
         """
         self.slope = slope
         self.points = points
