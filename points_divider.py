@@ -4,7 +4,7 @@
 ContinuousPart 为拟合需要调用的数据结构，每一个实例为一个需要单独拟合的点集
 slope 为这个实例中包含的点集与x轴正方向的夹角，角度制， 例如，45表示是45度， 80表示80度
 points 为一个二维数组，其中的数据为点的坐标，例如, [[1, 2], [3, 4]]表示两个点，坐标分别为(1, 2), (3, 4)
-block中没有点时，slope与points都为null
+block中没有点时，slope与points都为None
 """
 
 from block_marker import BlockMarker, Block
@@ -79,7 +79,7 @@ class PointsDivider(PointsDividerInterface):
     def find_same(two_dimension_lists, x, y, sort_list):
         if x < 0 or x >= row or y < 0 or y >= col:
             return
-        elif two_dimension_lists[x][y].points == null:
+        elif two_dimension_lists[x][y].points == None:
             return
         elif two_dimension_lists[x][y].slope == 0:
             if y > 0 and two_dimension_lists[x][y - 1].slope in [0, 45, 135] and flag_lists[x][y - 1] == 0:

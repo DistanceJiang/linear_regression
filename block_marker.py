@@ -1,6 +1,7 @@
 # coding=utf-8
-import math
 import numpy as np
+from utils import get_points_from_pcd, get_xy_lim, filter_points, get_slope
+from math import ceil
 
 """
 block_marker.py 主要用来实现对地图点分网格进行标记
@@ -12,14 +13,11 @@ class BlockMarkerInterface:
     需要实现这个接口，来对点进行标记
     """
 
-    def __init__(self, row, col, least_count, resolution):
+    def __init__(self, resolution=1):
         """
         @param resolution: int, in meters, the length of a block's edge
         """
         self.resolution = resolution
-        self.row = row
-        self.col = col
-        self.least_count = least_count
 
     def set_points(self, points):
         """
@@ -37,8 +35,41 @@ class BlockMarkerInterface:
 
 class BlockMarker(BlockMarkerInterface):
 
-    def __init__(self, row, col, least_count, resolution = 1):
-        super(BlockMarker, self).__init__(row, col, least_count, resolution)
+    def mark(self):
+        blocks = []
+        xy_lim = get_xy_lim(self.points) # [x_min, x_max, y_min, y_max]
+        origin = [xy_lim[0], xy_lim[2]]
+        row = int(ceil((xy_lim[3] - xy_lim[2]) / self.resolution))
+        col = int(ceil((xy_lim[1] - xy_lim[0]) / self.resolution))
+        for i in range(row):
+            for j in range(col):
+                position = [i, j]
+                cordinate = self.pos2cordinate(position, origin, self.resolution)
+                points = filter_points(self.points, cordinate[0], cordinate[0] + self.resolution, \
+                    cordinate[1] - self.resolution, cordinate[1])
+                if len(points) == 0:
+                    blocks.append(Block(None, [], position))
+                else:
+                    slope = self.clamp_slope(get_slope(points))
+                    blocks.append(Block(slope, points, position))
+        return blocks
+
+    @staticmethod
+    def pos2cordinate(pos, origin, step):
+        return [pos[0] * step + origin[0], pos[1] * step + origin[1]]
+
+    @staticmethod
+    def clamp_slope(slope):
+        return int(round(slope / 45)) * 45
+
+
+# Deprecated
+class DeprecatedBlockMarker(BlockMarkerInterface):
+
+    def __init__(self, row, col, least_count):
+        self.row = row
+        self.col = col
+        self.least_count = least_count
         self.nums = 0
         self.list_points = list()
         self.min_x = float("inf")
@@ -141,31 +172,29 @@ class BlockMarker(BlockMarkerInterface):
         dis = (math.fabs(a * point_X + b * point_Y + c)) / (math.pow(a * a + b * b, 0.5))
         return dis
 
-
 class Block:
 
     """
     BlockMarker的输出，包含一个网格中的数据点，网格的位置（实际上是网格在二维数组中的二维索引），网格中点的斜率
     """
 
-    def __init__(self):
+    def __init__(self, slope, points, position):
         """
         @param slope: 网格中点的斜率；若Block为空，则slope=null
         @param points: 网格中的数据点；若Block为空，则points=[]
         @param position: 网格的二维索引, [i， j]
         """
-
-    def set_slope(self, slope):
         self.slope = slope
-
-    def set_points(self, points):
         self.points = points
-
-    def set_position(self, position):
         self.position = position
 
+    def __str__(self):
+        return str(self.slope) + " degrees at " + str(self.position)
 
+    def __repr__(self):
+        return str(self)
 
 if __name__ == "__main__":
-    blockMarker = BlockMarker(8, 11, 20)
-    blockMarker.mark()
+    marker = BlockMarker()
+    marker.set_points(get_points_from_pcd("four_walls.pcd"))
+    print(marker.mark())
