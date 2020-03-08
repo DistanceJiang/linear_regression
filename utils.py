@@ -65,7 +65,6 @@ def get_slope(points):
     reg = LinearRegression()
     reg.fit(x, y)
     k = reg.coef_[0][0]
-    print("k: ", k)
     deg = np.rad2deg(np.arctan(k))
     if deg < 0: deg += 180
     return deg

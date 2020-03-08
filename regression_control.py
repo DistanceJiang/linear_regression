@@ -6,7 +6,7 @@ from utils import filter_points, get_rotation_matrix, get_intersection, rotate_l
 import pypcd
 import numpy as np
 
-class regressionController():
+class RegressionController:
 
     def __init__(self, path=None, segments_count=1, verbose=False):
         """
@@ -88,7 +88,7 @@ class regressionController():
         return self.intersections
 
 
-class simpleRegressionController(regressionController):
+class SimpleRegressionController(RegressionController):
     # Manually marked region to fit
         
     def set_parts(self):

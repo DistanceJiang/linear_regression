@@ -5,6 +5,7 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from utils import get_intersection, get_xy_lim
 from regression_control import simpleRegressionController
+from points_divider import PointsDivider
 
 """
 TODO:
@@ -13,8 +14,9 @@ TODO:
 verbose = False
 
 # Linear regression
-controller = simpleRegressionController(path='four_walls.pcd', verbose=verbose, segments_count=1)
-controller.set_parts()
+controller = RegressionController(path='four_walls.pcd', verbose=verbose, segments_count=1)
+divider = PointsDivider()
+controller.set_parts(divider)
 controller.fit()
 
 # set figure
