@@ -77,7 +77,7 @@ class regressionController():
     def set_parts(self, divider):
         """
         Divide all points into parts to fit
-        @param divider: PointsDivider object, divider points into parts
+        @param divider: PointsDivider object, divide points into parts
         @return:
         """
         divider.set_points(self.points)

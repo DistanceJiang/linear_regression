@@ -2,6 +2,7 @@
 
 import pypcd
 import numpy as np
+from sklearn.linear_model import LinearRegression
 
 def get_points_from_pcd(path):
     return [[i['x'], i['y']] for i in pypcd.PointCloud.from_path(path).pc_data]
@@ -55,7 +56,21 @@ def rotate_line(line, deg):
     b = line[1] / coef_b
     return [k, b]
 
+def get_slope(points):
+    """
+    Calculate the overall slope for points, 0 ~ 180
+    """
+    x = np.array([i[0] for i in points]).reshape(-1, 1)
+    y = np.array([i[1] for i in points]).reshape(-1, 1)
+    reg = LinearRegression()
+    reg.fit(x, y)
+    k = reg.coef_[0][0]
+    print("k: ", k)
+    deg = np.rad2deg(np.arctan(k))
+    if deg < 0: deg += 180
+    return deg
+
 
 if __name__ == "__main__":
-    line = [0.02521118603829011, -4.412689704966222]
-    print(rotate_line(line, 90))
+    points = [[0, 0], [-2, 1]]
+    print(get_slope(points))
