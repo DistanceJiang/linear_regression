@@ -228,6 +228,7 @@ if __name__ == "__main__":
     marker.set_points(points)
     blocks = marker.mark()
     
+    # Plot
     for row in blocks:
         for block in row:
             cordinate = marker.pos2cordinate(block.position)
