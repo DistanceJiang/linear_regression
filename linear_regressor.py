@@ -3,13 +3,14 @@
 import pypcd
 from utils import variance, get_intersection, filter_points
 import numpy as np
+import sys
 from math import floor, ceil
 
 """
 TODO:
 """ 
 
-class segmentedLinearRegressor:
+class SegmentedLinearRegressor:
 
     def __init__(self, part=None, verbose=False):
         """
@@ -40,7 +41,7 @@ class segmentedLinearRegressor:
         @param segments_count: number of segments to process
         @return: list of intersections
         """
-        self.clear_state() # ensure you to process multiple times without having to create a new instance of regressor
+        self.clear_state() # ensure to process multiple times without having to create a new instance of regressor
         self.segments_count = segments_count
         self.interval.append(int(min([i[0] for i in self.points])))
         self.interval.append(int(max([i[0] for i in self.points])))
@@ -66,15 +67,22 @@ class segmentedLinearRegressor:
             b.append(0)
         A = np.matrix(a)
         b = np.array(b)
-        result = np.linalg.solve(A, b)
-        self.parameters = [[result[i * 2], result[i * 2 + 1]] for i in range(segments_count)]
+        singular = False
+        if np.linalg.cond(A) < 1/sys.float_info.epsilon: # to avoid singular matrix
+            result = np.linalg.solve(A, b)
+            self.parameters = [[result[i * 2], result[i * 2 + 1]] for i in range(segments_count)]
+        else:
+            singular = True
 
         if self.verbose:
             np.set_printoptions(precision=3, suppress=True)
             print("\nA: ")
             print(A)
-            print("\nx: ")
-            print(result)
+            if not singular:
+                print("\nx: ")
+                print(result)
+            else:
+                print("A is singular, no result is available.")
             print("\nb: ")
             print(b)
             print("\nSegments: " + str(segments_count))
@@ -84,6 +92,9 @@ class segmentedLinearRegressor:
             print(self.interval)
 
     def getRows(self, index, dimension):
+        """
+        计算矩阵的每一行，一次计算两行
+        """
         row1 = [0 for i in range(dimension)]
         row2 = [0 for i in range(dimension)]
         step = (self.interval[1] - self.interval[0]) / float(self.segments_count)
@@ -113,18 +124,22 @@ class segmentedLinearRegressor:
         self.points = points
 
     def get_intersections(self):
+        """
+        由于是分段线性拟合，所以需要给出折点让绘图部分绘制出折线
+        """
+        if len(self.parameters) == 0: return []
         x = []
         y = []
         for i in range(len(self.parameters) + 1):
-            if i == 0:
+            if i == 0: # 左边端点
                 param = self.parameters[0]
                 x.append(self.interval[0])
                 y.append(x[0] * param[0] + param[1])
-            elif i == len(self.parameters):
+            elif i == len(self.parameters): # 右边端点
                 param = self.parameters[i - 1]
                 x.append(self.interval[1])
                 y.append(x[len(x) - 1] * param[0] + param[1])
-            else:
+            else: # 两条折线的交点
                 param1 = self.parameters[i - 1]
                 param2 = self.parameters[i]
                 intersection = get_intersection(param1, param2)

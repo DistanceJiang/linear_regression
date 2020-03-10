@@ -12,12 +12,14 @@ class BlockMarkerInterface:
     """
     需要实现这个接口，来对点进行标记
     """
+    LOWEST_POINTS_COUNT = 10
 
     def __init__(self, resolution=1):
         """
         @param resolution: int, in meters, the length of a block's edge
         """
         self.resolution = resolution
+        self.origin = []
 
     def set_points(self, points):
         """
@@ -32,35 +34,43 @@ class BlockMarkerInterface:
         """
         pass
 
+    def pos2cordinate(self, pos):
+        """
+        Convert position of the block to coordinate system
+        @pos: position of the block in the 2d array
+        """
+        return [pos[0] * self.resolution + self.origin[0], pos[1] * self.resolution + self.origin[1]]
+
 
 class BlockMarker(BlockMarkerInterface):
 
     def mark(self):
         blocks = []
         xy_lim = get_xy_lim(self.points) # [x_min, x_max, y_min, y_max]
-        origin = [xy_lim[0], xy_lim[2]]
+        self.origin = [xy_lim[0], xy_lim[2]]
         row = int(ceil((xy_lim[3] - xy_lim[2]) / self.resolution))
         col = int(ceil((xy_lim[1] - xy_lim[0]) / self.resolution))
         for i in range(row):
+            row_blocks = []
             for j in range(col):
                 position = [i, j]
-                cordinate = self.pos2cordinate(position, origin, self.resolution)
+                cordinate = self.pos2cordinate(position)
                 points = filter_points(self.points, cordinate[0], cordinate[0] + self.resolution, \
-                    cordinate[1] - self.resolution, cordinate[1])
-                if len(points) == 0:
-                    blocks.append(Block(None, [], position))
+                    cordinate[1], cordinate[1] + self.resolution)
+                if len(points) < self.LOWEST_POINTS_COUNT: # very few points in the block, slope is None
+                    row_blocks.append(Block(None, points, position))
                 else:
                     slope = self.clamp_slope(get_slope(points))
-                    blocks.append(Block(slope, points, position))
+                    row_blocks.append(Block(slope, points, position))
+            blocks.append(row_blocks)
         return blocks
 
     @staticmethod
-    def pos2cordinate(pos, origin, step):
-        return [pos[0] * step + origin[0], pos[1] * step + origin[1]]
-
-    @staticmethod
     def clamp_slope(slope):
-        return int(round(slope / 45)) * 45
+        """
+        make slope either 0, 45, 90, 135
+        """
+        return int(round(slope / 45)) * 45 % 180
 
 
 # Deprecated
@@ -189,12 +199,54 @@ class Block:
         self.position = position
 
     def __str__(self):
-        return str(self.slope) + " degrees at " + str(self.position)
+        return str(self.position) + ": " + str(self.slope)
 
     def __repr__(self):
         return str(self)
 
 if __name__ == "__main__":
-    marker = BlockMarker()
-    marker.set_points(get_points_from_pcd("four_walls.pcd"))
-    print(marker.mark())
+    import matplotlib
+    matplotlib.use('TkAgg')
+    import matplotlib.pyplot as plt
+
+    points = get_points_from_pcd("four_walls.pcd")
+    
+    # Config figure
+    padding = 0.2
+    xy_lim = get_xy_lim(points)
+    ratio = (xy_lim[3] - xy_lim[2]) / float(xy_lim[1] - xy_lim[0])
+    fig = plt.figure(figsize=(10 * ratio, 10))
+    ax1 = fig.add_subplot(1, 1, 1)
+    ax1.grid(True, linewidth=0.5, color='#666666', linestyle='dotted')
+    ax1.axis([xy_lim[0] - padding, xy_lim[1] + padding, xy_lim[2] - padding, xy_lim[3] + padding])
+    ax1.set_color_cycle(['red', 'black', 'blue', 'brown', 'green'])
+    # ax1.scatter([p[0] for p in points], [p[1] for p in points], color='red', s=1)
+
+    # Marking
+    resolution = 0.4
+    marker = BlockMarker(resolution)
+    marker.set_points(points)
+    blocks = marker.mark()
+    
+    for row in blocks:
+        for block in row:
+            cordinate = marker.pos2cordinate(block.position)
+            line_to_draw = []
+            if block.slope is None:
+                ax1.scatter([p[0] for p in block.points], [p[1] for p in block.points], s=1)
+                continue
+            elif block.slope == 0:
+                line_to_draw = [[cordinate[0], cordinate[1] + resolution / 2], \
+                    [cordinate[0] + resolution, cordinate[1] + resolution / 2]]
+            elif block.slope == 45:
+                line_to_draw = [cordinate, [cordinate[0] + resolution, cordinate[1] + resolution]]
+            elif block.slope == 90:
+                line_to_draw = [[cordinate[0] + resolution / 2, cordinate[1]], \
+                    [cordinate[0] + resolution / 2, cordinate[1] + resolution]]
+            elif block.slope == 135:
+                line_to_draw = [[cordinate[0], cordinate[1] + resolution], \
+                    [cordinate[0] + resolution, cordinate[1]]]
+            ax1.scatter([p[0] for p in block.points], [p[1] for p in block.points], s=1)
+            ax1.plot([i[0] for i in line_to_draw], [i[1] for i in line_to_draw], linewidth=1)
+
+    plt.show()

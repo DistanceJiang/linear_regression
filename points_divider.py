@@ -20,6 +20,12 @@ class ContinuousPart:
         self.slope = slope
         self.points = points
 
+    def __str__(self):
+        return str(len(self.points)) + ": " + str(self.slope)
+
+    def __repr__(self):
+        return str(self)
+
 
 class PointsDividerInterface:
 
@@ -42,7 +48,7 @@ class PointsDividerInterface:
         blocks为包含block_marker.py中的Block的列表，包含对于小方格的标记
         """
         marker = BlockMarker()
-        marker.get_points(self.points)
+        marker.set_points(self.points)
         self.blocks = marker.mark()
 
     def divide(self):
@@ -59,11 +65,89 @@ class PointsDivider(PointsDividerInterface):
         row = len(self.blocks)
         col = len(self.blocks[0])
         flag_lists = [[0 for i in range(col)] for j in range(row)]
+
+        def find_same(two_dimension_lists, x, y, sort_list):
+            if x < 0 or x >= row or y < 0 or y >= col:
+                return None
+            elif two_dimension_lists[x][y].points == None:
+                return None
+            elif two_dimension_lists[x][y].slope == 0:
+                if y > 0 and two_dimension_lists[x][y - 1].slope in [0, 45, 135] and flag_lists[x][y - 1] == 0:
+                    sort_list.append(two_dimension_lists[x][y - 1])
+                    flag_lists[x][y - 1] = 1
+                    find_same(two_dimension_lists, x, y - 1, sort_list)
+                if y < col - 1 and two_dimension_lists[x][y + 1].slope in [0, 45, 135] and flag_lists[x][y + 1] == 0:
+                    sort_list.append(two_dimension_lists[x][y + 1])
+                    flag_lists[x][y + 1] = 1
+                    find_same(two_dimension_lists, x, y + 1, sort_list)
+            elif two_dimension_lists[x][y].slope == 90:
+                if x > 0 and two_dimension_lists[x - 1][y].slope in [90, 45, 135] and flag_lists[x - 1][y] == 0:
+                    sort_list.append(two_dimension_lists[x - 1][y])
+                    flag_lists[x - 1][y] = 1
+                    find_same(two_dimension_lists, x - 1, y, sort_list)
+                if x < row - 1 and two_dimension_lists[x + 1][y].slope in [90, 45, 135] and flag_lists[x + 1][y] == 0:
+                    sort_list.append(two_dimension_lists[x + 1][y])
+                    flag_lists[x + 1][y] = 1
+                    find_same(two_dimension_lists, x + 1, y, sort_list)
+            elif two_dimension_lists[x][y].slope == 45:
+                if x > 0 and y < col - 1 and two_dimension_lists[x - 1][y + 1].slope == 45 and \
+                        flag_lists[x - 1][y + 1] == 0:
+                    sort_list.append(two_dimension_lists[x - 1][y + 1])
+                    flag_lists[x - 1][y + 1] = 1
+                    find_same(two_dimension_lists, x - 1, y + 1, sort_list)
+                if x < row - 1 and y > 0 and two_dimension_lists[x + 1][y - 1].slope == 45 and \
+                        flag_lists[x + 1][y - 1] == 0:
+                    sort_list.append(two_dimension_lists[x + 1][y - 1])
+                    flag_lists[x + 1][y - 1] = 1
+                    find_same(two_dimension_lists, x + 1, y - 1, sort_list)
+                if y > 0 and two_dimension_lists[x][y - 1].slope in [0, 135] and flag_lists[x][y - 1] == 0:
+                    sort_list.append(two_dimension_lists[x][y - 1])
+                    flag_lists[x][y - 1] = 1
+                    find_same(two_dimension_lists, x, y - 1, sort_list)
+                if y < col - 1 and two_dimension_lists[x][y + 1].slope in [0, 135] and flag_lists[x][y + 1] == 0:
+                    sort_list.append(two_dimension_lists[x][y + 1])
+                    flag_lists[x][y + 1] = 1
+                    find_same(two_dimension_lists, x, y + 1, sort_list)
+                if x > 0 and two_dimension_lists[x - 1][y].slope in [90, 135] and flag_lists[x - 1][y] == 0:
+                    sort_list.append(two_dimension_lists[x - 1][y])
+                    flag_lists[x - 1][y] = 1
+                    find_same(two_dimension_lists, x - 1, y, sort_list)
+                if x < row - 1 and two_dimension_lists[x + 1][y].slope in [90, 135] and flag_lists[x + 1][y] == 0:
+                    sort_list.append(two_dimension_lists[x + 1][y])
+                    flag_lists[x + 1][y] = 1
+                    find_same(two_dimension_lists, x + 1, y, sort_list)
+            elif two_dimension_lists[x][y].slope == 135:
+                if x > 0 and y > 0 and two_dimension_lists[x - 1][y - 1].slope == 135 and flag_lists[x - 1][y - 1] == 0:
+                    sort_list.append(two_dimension_lists[x - 1][y - 1])
+                    flag_lists[x - 1][y - 1] = 1
+                    find_same(two_dimension_lists, x - 1, y - 1, sort_list)
+                if x < row - 1 and y < col - 1 and two_dimension_lists[x + 1][y + 1].slope == 135 and \
+                        flag_lists[x + 1][y + 1] == 0:
+                    sort_list.append(two_dimension_lists[x + 1][y + 1])
+                    flag_lists[x + 1][y + 1] = 1
+                    find_same(two_dimension_lists, x + 1, y + 1, sort_list)
+                if y > 0 and two_dimension_lists[x][y - 1].slope in [0, 135] and flag_lists[x][y - 1] == 0:
+                    sort_list.append(two_dimension_lists[x][y - 1])
+                    flag_lists[x][y - 1] = 1
+                    find_same(two_dimension_lists, x, y - 1, sort_list)
+                if y < col - 1 and two_dimension_lists[x][y + 1].slope in [0, 45] and flag_lists[x][y + 1] == 0:
+                    sort_list.append(two_dimension_lists[x][y + 1])
+                    flag_lists[x][y + 1] = 1
+                    find_same(two_dimension_lists, x, y + 1, sort_list)
+                if x > 0 and two_dimension_lists[x - 1][y].slope in [90, 45] and flag_lists[x - 1][y] == 0:
+                    sort_list.append(two_dimension_lists[x - 1][y])
+                    flag_lists[x - 1][y] = 1
+                    find_same(two_dimension_lists, x - 1, y, sort_list)
+                if x < row - 1 and two_dimension_lists[x + 1][y].slope in [90, 45] and flag_lists[x + 1][y] == 0:
+                    sort_list.append(two_dimension_lists[x + 1][y])
+                    flag_lists[x + 1][y] = 1
+                    find_same(two_dimension_lists, x + 1, y, sort_list)
+
         sort_lists = []
         k = -1
         for x in range(row):
             for y in range(col):
-                if self.blocks[x][y] in [0, 90, 45, 135] and flag_lists[x][y] == 0:
+                if self.blocks[x][y].slope in [0, 90, 45, 135] and flag_lists[x][y] == 0:
                     sort_lists.append([])
                     k = k + 1
                     find_same(self.blocks, x, y, sort_lists[k])
@@ -76,79 +160,7 @@ class PointsDivider(PointsDividerInterface):
                 contiPart_list[i].slope = get_slope(contiPart_list[i].points)
         return contiPart_list
 
-    def find_same(two_dimension_lists, x, y, sort_list):
-        if x < 0 or x >= row or y < 0 or y >= col:
-            return
-        elif two_dimension_lists[x][y].points == None:
-            return
-        elif two_dimension_lists[x][y].slope == 0:
-            if y > 0 and two_dimension_lists[x][y - 1].slope in [0, 45, 135] and flag_lists[x][y - 1] == 0:
-                sort_list.append(two_dimension_lists[x][y - 1])
-                flag_lists[x][y - 1] = 1
-                find_same(two_dimension_lists, x, y - 1, sort_list)
-            if y < col - 1 and two_dimension_lists[x][y + 1].slope in [0, 45, 135] and flag_lists[x][y + 1] == 0:
-                sort_list.append(two_dimension_lists[x][y + 1])
-                flag_lists[x][y + 1] = 1
-                find_same(two_dimension_lists, x, y + 1, sort_list)
-        elif two_dimension_lists[x][y].slope == 90:
-            if x > 0 and two_dimension_lists[x - 1][y].slope in [90, 45, 135] and flag_lists[x - 1][y] == 0:
-                sort_list.append(two_dimension_lists[x - 1][y])
-                flag_lists[x - 1][y] = 1
-                find_same(two_dimension_lists, x - 1, y, sort_list)
-            if x < row - 1 and two_dimension_lists[x + 1][y].slope in [90, 45, 135] and flag_lists[x + 1][y] == 0:
-                sort_list.append(two_dimension_lists[x + 1][y])
-                flag_lists[x + 1][y] = 1
-                find_same(two_dimension_lists, x + 1, y, sort_list)
-        elif two_dimension_lists[x][y].slope == 45:
-            if x > 0 and y < col - 1 and two_dimension_lists[x - 1][y + 1].slope == 45 and \
-                    flag_lists[x - 1][y + 1] == 0:
-                sort_list.append(two_dimension_lists[x - 1][y + 1])
-                flag_lists[x - 1][y + 1] = 1
-                find_same(two_dimension_lists, x - 1, y + 1, sort_list)
-            if x < row - 1 and y > 0 and two_dimension_lists[x + 1][y - 1].slope == 45 and \
-                    flag_lists[x + 1][y - 1] == 0:
-                sort_list.append(two_dimension_lists[x + 1][y - 1])
-                flag_lists[x + 1][y - 1] = 1
-                find_same(two_dimension_lists, x + 1, y - 1, sort_list)
-            if y > 0 and two_dimension_lists[x][y - 1].slope in [0, 135] and flag_lists[x][y - 1] == 0:
-                sort_list.append(two_dimension_lists[x][y - 1])
-                flag_lists[x][y - 1] = 1
-                find_same(two_dimension_lists, x, y - 1, sort_list)
-            if y < col - 1 and two_dimension_lists[x][y + 1].slope in [0, 135] and flag_lists[x][y + 1] == 0:
-                sort_list.append(two_dimension_lists[x][y + 1])
-                flag_lists[x][y + 1] = 1
-                find_same(two_dimension_lists, x, y + 1, sort_list)
-            if x > 0 and two_dimension_lists[x - 1][y].slope in [90, 135] and flag_lists[x - 1][y] == 0:
-                sort_list.append(two_dimension_lists[x - 1][y])
-                flag_lists[x - 1][y] = 1
-                find_same(two_dimension_lists, x - 1, y, sort_list)
-            if x < row - 1 and two_dimension_lists[x + 1][y].slope in [90, 135] and flag_lists[x + 1][y] == 0:
-                sort_list.append(two_dimension_lists[x + 1][y])
-                flag_lists[x + 1][y] = 1
-                find_same(two_dimension_lists, x + 1, y, sort_list)
-        elif two_dimension_lists[x][y].slope == 135:
-            if x > 0 and y > 0 and two_dimension_lists[x - 1][y - 1].slope == 135 and flag_lists[x - 1][y - 1] == 0:
-                sort_list.append(two_dimension_lists[x - 1][y - 1])
-                flag_lists[x - 1][y - 1] = 1
-                find_same(two_dimension_lists, x - 1, y - 1, sort_list)
-            if x < row - 1 and y < col - 1 and two_dimension_lists[x + 1][y + 1].slope == 135 and \
-                    flag_lists[x + 1][y + 1] == 0:
-                sort_list.append(two_dimension_lists[x + 1, y + 1])
-                flag_lists[x + 1][y + 1] = 1
-                find_same(two_dimension_lists, x + 1, y + 1, sort_list)
-            if y > 0 and two_dimension_lists[x][y - 1].slope in [0, 135] and flag_lists[x][y - 1] == 0:
-                sort_list.append(two_dimension_lists[x, y - 1])
-                flag_lists[x][y - 1] = 1
-                find_same(two_dimension_lists, x, y - 1, sort_list)
-            if y < col - 1 and two_dimension_lists[x][y + 1].slope in [0, 45] and flag_lists[x][y + 1] == 0:
-                sort_list.append(two_dimension_lists[x, y + 1])
-                flag_lists[x][y + 1] = 1
-                find_same(two_dimension_lists, x, y + 1, sort_list)
-            if x > 0 and two_dimension_lists[x - 1][y].slope in [90, 45] and flag_lists[x - 1][y] == 0:
-                sort_list.append(two_dimension_lists[x - 1, y])
-                flag_lists[x - 1][y] = 1
-                find_same(two_dimension_lists, x - 1, y, sort_list)
-            if x < row - 1 and two_dimension_lists[x + 1][y].slope in [90, 45] and flag_lists[x + 1][y] == 0:
-                sort_list.append(two_dimension_lists[x + 1, y])
-                flag_lists[x + 1][y] = 1
-                find_same(two_dimension_lists, x + 1, y, sort_list)
+if __name__ == "__main__":
+    divider = PointsDivider()
+    divider.set_points(get_points_from_pcd('four_walls.pcd'))
+    print(divider.divide())

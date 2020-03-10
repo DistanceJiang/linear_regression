@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from linear_regressor import segmentedLinearRegressor
+from linear_regressor import SegmentedLinearRegressor
 from points_divider import *
 from utils import filter_points, get_rotation_matrix, get_intersection, rotate_line
 import pypcd
@@ -39,7 +39,6 @@ class RegressionController:
         @return: list of intersection list
         """
         count = 1
-        print(self.parts)
         if len(self.parts) == 0: raise Exception("Nothing to fit, check if set_parts() method is called.")
         for part in self.parts:
             if self.verbose:
@@ -63,12 +62,14 @@ class RegressionController:
             vec = np.array([p[0],p[1]])
             points.append(list(matrix.dot(vec)))
         new_part = ContinuousPart(0, points)
-        regressor = segmentedLinearRegressor(new_part, self.verbose)
+        regressor = SegmentedLinearRegressor(new_part, self.verbose)
         self.regressors.append(regressor)
-        regressor.process(self.segments_count)
+        regressor.process(self.segments_count)            
         intersections = regressor.get_intersections()
         new_intersections = []
         matrix = get_rotation_matrix(slope)
+        for i in range(len(regressor.parameters)):
+            regressor.parameters[i] = rotate_line(regressor.parameters[i], slope) 
         for p in intersections:
             vec = np.array([p[0], p[1]])
             new_intersections.append(list(matrix.dot(vec)))
@@ -107,15 +108,15 @@ class SimpleRegressionController(RegressionController):
     def get_intersections(self):
         if (len(self.regressors) == 0): raise Exception("No regression has been applied, please try to do a regression first.")
         parameters = []
-        for reg, part in zip(self.regressors, self.parts):
-            parameters.append(rotate_line(reg.get_parameters()[0], part.slope))
+        for reg in self.regressors:
+            parameters.append(reg.get_parameters()[0])
         points = []
         points.append(get_intersection(parameters[0], parameters[2]))
         points.append(get_intersection(parameters[0], parameters[3]))
         points.append(get_intersection(parameters[1], parameters[2]))
         points.append(get_intersection(parameters[1], parameters[3]))
         intersections = []
-        intersections.append([points[0], points[1]])
+        intersections.append([[points[0][0], points[0][1] + 2], points[1]])
         intersections.append([points[0], points[2]])
         intersections.append([points[2], points[3]])
         intersections.append([points[3], points[1]])
