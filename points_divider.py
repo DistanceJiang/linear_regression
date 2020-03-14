@@ -9,6 +9,7 @@ block中没有点时，slope与points都为None
 
 from block_marker import BlockMarker, Block
 from utils import get_points_from_pcd, get_slope
+from Queue import Queue
 
 class ContinuousPart:
 
@@ -51,14 +52,59 @@ class PointsDividerInterface:
         marker.set_points(self.points)
         self.blocks = marker.mark()
 
+    def get_block(self, pos):
+        return self.blocks[pos[0]][pos[1]]
+
     def divide(self):
         """
-        @self.blocks: Block的二维数组
         @return: list of ContinuousParts
         """
         
-
 class PointsDivider(PointsDividerInterface):
+
+    def divide(self):
+        if (len(self.blocks) == 0): raise Exception("No blocks available, try to call set_blocks first.")
+        blocks_count = len(self.blocks) * len(self.blocks[0])
+        visited = set()
+        edge = list()
+        parts = []
+        start = [0, 0]
+        while (len(visited) < blocks_count):
+            part = ContinuousPart(None, [])
+            q = Queue()
+            q.put(start)
+            while len(q) != 0:
+                cur = q.get()
+                visited.add(cur)
+                part.points.extend(self.get_block(cur).points)
+                if self.get_block(cur).slope is None: continue
+                surroundings = get_surroundings(cur)
+                for pos in surroundings:
+                    if pos in visited:
+                        continue
+                    if is_connected(cur, pos):
+                        q.put(pos)
+                        if pos in edge:
+                            edge.remove(pos)
+                    else:
+                        edge.append(pos)
+            part.slope = get_slope(part.points)
+            parts.append(part)
+            start = edge[0]
+            edge.remove(start)
+        return parts
+
+    
+    @staticmethod
+    def is_connected(block1, block2):
+        pass
+
+    def get_surroundings(self, pos):
+        pass
+        
+
+# Deprecated
+class DeprecatedPointsDivider(PointsDividerInterface):
 
     def divide(self):
         self.set_blocks()

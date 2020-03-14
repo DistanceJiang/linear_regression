@@ -223,7 +223,7 @@ if __name__ == "__main__":
     # ax1.scatter([p[0] for p in points], [p[1] for p in points], color='red', s=1)
 
     # Marking
-    resolution = 0.4
+    resolution = 0.5
     marker = BlockMarker(resolution)
     marker.set_points(points)
     blocks = marker.mark()
@@ -249,5 +249,7 @@ if __name__ == "__main__":
                     [cordinate[0] + resolution, cordinate[1]]]
             ax1.scatter([p[0] for p in block.points], [p[1] for p in block.points], s=1)
             ax1.plot([i[0] for i in line_to_draw], [i[1] for i in line_to_draw], linewidth=1)
+
+    
 
     plt.show()

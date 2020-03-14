@@ -43,37 +43,12 @@ class RegressionController:
         for part in self.parts:
             if self.verbose:
                 print("\n\n************************ Fitting part {} ************************".format(count))
-            self.intersections.append(self.rotated_fit(part))
+            regressor = SegmentedLinearRegressor(part, self.verbose)
+            self.regressors.append(regressor)
+            regressor.process(self.segments_count)            
+            regressor.get_intersections()
+            self.intersections.append(regressor.get_intersections())
             count += 1
-
-    def rotated_fit(self, part):
-        """
-        1. Rotate points to horizontal according to ContinuousPart.slope
-        2. Do normal fit using linear regressor
-        3. Rotate everything back
-
-        @param part: ContinuousPart
-        @return: list of intersection points
-        """
-        slope = part.slope
-        matrix = get_rotation_matrix(-slope)
-        points = []
-        for p in part.points:
-            vec = np.array([p[0],p[1]])
-            points.append(list(matrix.dot(vec)))
-        new_part = ContinuousPart(0, points)
-        regressor = SegmentedLinearRegressor(new_part, self.verbose)
-        self.regressors.append(regressor)
-        regressor.process(self.segments_count)            
-        intersections = regressor.get_intersections()
-        new_intersections = []
-        matrix = get_rotation_matrix(slope)
-        for i in range(len(regressor.parameters)):
-            regressor.parameters[i] = rotate_line(regressor.parameters[i], slope) 
-        for p in intersections:
-            vec = np.array([p[0], p[1]])
-            new_intersections.append(list(matrix.dot(vec)))
-        return new_intersections
 
     def set_parts(self, divider):
         """

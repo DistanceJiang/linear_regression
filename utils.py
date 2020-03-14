@@ -3,6 +3,8 @@
 import pypcd
 import numpy as np
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+import random
 
 def get_points_from_pcd(path):
     return [[i['x'], i['y']] for i in pypcd.PointCloud.from_path(path).pc_data]
@@ -56,20 +58,57 @@ def rotate_line(line, deg):
     b = line[1] / coef_b
     return [k, b]
 
+def translate_points(points, new_origin):
+    for p in points:
+        p[0] -= new_origin[0]
+        p[1] -= new_origin[1]
+    return points
+
+def scale_points(points, ratio):
+    for p in points:
+        p[0] *= ratio
+        p[1] *= ratio
+    return points
+
 def get_slope(points):
     """
     Calculate the overall slope for points, 0 ~ 180
     """
-    x = np.array([i[0] for i in points]).reshape(-1, 1)
-    y = np.array([i[1] for i in points]).reshape(-1, 1)
-    reg = LinearRegression()
-    reg.fit(x, y)
-    k = reg.coef_[0][0]
+    k, b = get_k_b(points)
     deg = np.rad2deg(np.arctan(k))
     if deg < 0: deg += 180
     return deg
 
+def get_k_b(points):
+    a, b, c = line_fit(points)
+    return - a / b, - c / b
+
+def line_fit(points):
+    """
+    并非一元线性回归，详见
+    https://blog.csdn.net/liyuanbhu/article/details/50866802?depth_1-utm_source=distribute.pc_relevant.none-task&utm_source=distribute.pc_relevant.none-task
+    """
+    count = len(points)
+    if (count < 2) :return 0, 0, 0
+    x_mean = sum([p[0] for p in points]) / float(count)
+    y_mean = sum([p[1] for p in points]) / float(count)
+
+    Dxx = Dxy = Dyy = 0.0
+    for i in range(count):
+        Dxx += pow((points[i][0] - x_mean), 2)
+        Dxy += (points[i][0] - x_mean) * (points[i][1] - y_mean)
+        Dyy += pow((points[i][1] - y_mean), 2)
+    
+    Lambda = ((Dxx + Dyy) - np.sqrt( (Dxx - Dyy) * (Dxx - Dyy) + 4 * Dxy * Dxy)) / 2.0
+    den = np.sqrt(Dxy * Dxy + (Lambda - Dxx) * (Lambda - Dxx))
+
+    a = Dxy / den
+    b = (Lambda - Dxx) / den
+    c = - a * x_mean - b * y_mean
+    return a, b, c
+
 
 if __name__ == "__main__":
-    points = [[0, 0], [-2, 1]]
+    points = get_points_from_pcd('four_walls.pcd')
+    points = filter_points(points, 4, 5, 2, 3)
     print(get_slope(points))

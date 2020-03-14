@@ -1,24 +1,42 @@
 # coding=utf-8
 
 import pypcd
-from utils import variance, get_intersection, filter_points
+from utils import *
 import numpy as np
 import sys
 from math import floor, ceil
+from points_divider import ContinuousPart
 
 """
 TODO:
 """ 
 
-class SegmentedLinearRegressor:
+class RegressorBase(object):
 
-    def __init__(self, part=None, verbose=False):
+    def __init__(self, part, verbose=False):
+        self.part = part
+        self.parameters = [] # y = k * x + b, [k, b]
+        self.verbose = verbose
+
+    def get_parameters(self):
+        return self.parameters
+
+    def get_intersections(self):
+        pass
+
+    def process(self):
+        pass
+
+
+class SegmentedLinearRegressor(RegressorBase):
+
+    def __init__(self, part, verbose=False):
         """
         @param part: ContinuousPart, contians the points to fit
         @param verbose: if True, print the mid results
         """
+        self.part = part
         self.points = []
-        if part is not None: self.points = part.points
         self.parameters = [] # y = k * x + b, [k, b]
         self.segments = []
         self.param_count = 0
@@ -35,7 +53,16 @@ class SegmentedLinearRegressor:
         self.param_count = 0
         self.interval = []
 
-    def process(self, segments_count):
+    def rotate_part(self):
+        slope = self.part.slope
+        matrix = get_rotation_matrix(-slope)
+        points = []
+        for p in self.part.points:
+            vec = np.array([p[0],p[1]])
+            points.append(list(matrix.dot(vec)))
+        return points
+
+    def process(self, segments_count=1):
         """
         用拉格朗日乘数法，对点进行分段线性拟合
         @param segments_count: number of segments to process
@@ -43,8 +70,9 @@ class SegmentedLinearRegressor:
         """
         self.clear_state() # ensure to process multiple times without having to create a new instance of regressor
         self.segments_count = segments_count
-        self.interval.append(int(min([i[0] for i in self.points])))
-        self.interval.append(int(max([i[0] for i in self.points])))
+        self.points = self.rotate_part()
+        self.interval.append(min([i[0] for i in self.points]))
+        self.interval.append(max([i[0] for i in self.points]))
         step = (self.interval[1] - self.interval[0]) / float(segments_count)
         x = [i[0] for i in self.points]
         y = [i[1] for i in self.points]
@@ -70,7 +98,9 @@ class SegmentedLinearRegressor:
         singular = False
         if np.linalg.cond(A) < 1/sys.float_info.epsilon: # to avoid singular matrix
             result = np.linalg.solve(A, b)
-            self.parameters = [[result[i * 2], result[i * 2 + 1]] for i in range(segments_count)]
+            parameters = [[result[i * 2], result[i * 2 + 1]] for i in range(segments_count)]
+            for i in range(len(parameters)):
+                self.parameters.append(rotate_line(parameters[i], self.part.slope))
         else:
             singular = True
 
@@ -82,7 +112,7 @@ class SegmentedLinearRegressor:
                 print("\nx: ")
                 print(result)
             else:
-                print("A is singular, no result is available.")
+                print("\nNOTICE: A is singular, no result is available.")
             print("\nb: ")
             print(b)
             print("\nSegments: " + str(segments_count))
@@ -117,17 +147,14 @@ class SegmentedLinearRegressor:
         two_elems[1] = sum([i[1] for i in points])
         return [row1, row2], two_elems
 
-    def get_parameters(self):
-        return self.parameters
-
-    def set_points(self, points):
-        self.points = points
-
     def get_intersections(self):
         """
         由于是分段线性拟合，所以需要给出折点让绘图部分绘制出折线
         """
         if len(self.parameters) == 0: return []
+        xy_lim = get_xy_lim(self.part.points)
+        self.interval[0] = xy_lim[0]
+        self.interval[1] = xy_lim[1]
         x = []
         y = []
         for i in range(len(self.parameters) + 1):
@@ -147,11 +174,57 @@ class SegmentedLinearRegressor:
                 y.append(intersection[1])
         return [[i, j] for i, j in zip(x, y)]
 
+
+class LinearRegressor(RegressorBase):
+    
+    def process(self):
+        k, b = get_k_b(self.part.points)
+        self.parameters = [[k, b]]
+
+    def get_intersections(self):
+        k = self.parameters[0][0]
+        b = self.parameters[0][1]
+        xy_lim = get_xy_lim(self.part.points)
+        x = [xy_lim[0], xy_lim[1], (xy_lim[2] - b) / k, (xy_lim[3] - b) / k]
+        x.sort()
+        return [[i, k * i + b] for i in x if x[0] < i < x[3]]
+
+
 if __name__ == "__main__":
-    regressor = segmentedLinearRegressor()
-    regressor.points = [[i['x'], i['y']] for i in pypcd.PointCloud.from_path('0.pcd').pc_data]
-    regressor.points = filter_points(regressor.points, float('-inf'), float('inf'), 2.5, 4)
-    for segments_count in range(1, 13):
-        regressor.process(segments_count)
-        print("\nsegments_count: " + str(round(segments_count, 3)) + \
-            "    variance: " + str(round(variance(regressor.points, regressor.parameters, regressor.segments), 3)))
+    import matplotlib
+    matplotlib.use('TkAgg')
+    import matplotlib.pyplot as plt
+    from utils import get_points_from_pcd, get_xy_lim, get_slope
+
+    def abline(slope, intercept):
+        """Plot a line from slope and intercept"""
+        axes = plt.gca()
+        x_vals = np.array(axes.get_xlim())
+        y_vals = intercept + slope * x_vals
+        plt.plot(x_vals, y_vals, '--')
+
+    points = get_points_from_pcd("four_walls.pcd")
+
+    padding = 0.2
+    xy_lim = get_xy_lim(points)
+    ratio = (xy_lim[3] - xy_lim[2]) / float(xy_lim[1] - xy_lim[0])
+    fig = plt.figure(figsize=(10 * ratio, 10))
+    ax1 = fig.add_subplot(1, 1, 1)
+    ax1.grid(True, linewidth=0.5, color='#666666', linestyle='dotted')
+    ax1.axis([xy_lim[0] - padding, xy_lim[1] + padding, xy_lim[2] - padding, xy_lim[3] + padding])
+
+    points = filter_points(points, 4, 5, 2, 3)
+    # points = [[4, 2.0], [4.003, 2.3], [4.05, 2.6], [4.1, 2.9]]
+    part = ContinuousPart(0, points)
+    reg = LinearRegressor(part, verbose=True)
+    reg.process()
+    ax1.scatter([p[0] for p in points], [p[1] for p in points], color='red', s=4)
+
+    param = reg.get_parameters()[0]
+    print(param)
+    # abline(param[0], param[1])
+
+    intersections = reg.get_intersections()
+    ax1.plot([i[0] for i in intersections], [i[1] for i in intersections], color='blue', linewidth=2)
+
+    plt.show()
