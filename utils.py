@@ -75,6 +75,9 @@ def get_slope(points):
     Calculate the overall slope for points, 0 ~ 180
     """
     k, b = get_k_b(points)
+    return k2slope(k)
+
+def k2slope(k):
     deg = np.rad2deg(np.arctan(k))
     if deg < 0: deg += 180
     return deg

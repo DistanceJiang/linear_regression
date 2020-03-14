@@ -1,7 +1,9 @@
 # coding=utf-8
 import numpy as np
-from utils import get_points_from_pcd, get_xy_lim, filter_points, get_slope
+from utils import get_points_from_pcd, get_xy_lim, filter_points, get_slope, k2slope
+import math
 from math import ceil
+from linear_regressor import LinearRegressor
 
 """
 block_marker.py 主要用来实现对地图点分网格进行标记
@@ -50,6 +52,7 @@ class BlockMarker(BlockMarkerInterface):
         self.origin = [xy_lim[0], xy_lim[2]]
         row = int(ceil((xy_lim[3] - xy_lim[2]) / self.resolution))
         col = int(ceil((xy_lim[1] - xy_lim[0]) / self.resolution))
+        reg = LinearRegressor()
         for i in range(row):
             row_blocks = []
             for j in range(col):
@@ -57,21 +60,15 @@ class BlockMarker(BlockMarkerInterface):
                 cordinate = self.pos2cordinate(position)
                 points = filter_points(self.points, cordinate[0], cordinate[0] + self.resolution, \
                     cordinate[1], cordinate[1] + self.resolution)
-                if len(points) < self.LOWEST_POINTS_COUNT: # very few points in the block, slope is None
+                if len(points) < self.LOWEST_POINTS_COUNT: # very few points in the block, param is None
                     row_blocks.append(Block(None, points, position))
                 else:
-                    slope = self.clamp_slope(get_slope(points))
-                    row_blocks.append(Block(slope, points, position))
+                    reg.process(points)
+                    param = reg.get_parameters()[0]
+                    slope = k2slope(param[0])
+                    row_blocks.append(Block(param, points, position))
             blocks.append(row_blocks)
         return blocks
-
-    @staticmethod
-    def clamp_slope(slope):
-        """
-        make slope either 0, 45, 90, 135
-        """
-        return int(round(slope / 45)) * 45 % 180
-
 
 # Deprecated
 class DeprecatedBlockMarker(BlockMarkerInterface):
@@ -188,15 +185,26 @@ class Block:
     BlockMarker的输出，包含一个网格中的数据点，网格的位置（实际上是网格在二维数组中的二维索引），网格中点的斜率
     """
 
-    def __init__(self, slope, points, position):
+    def __init__(self, param, points, position):
         """
-        @param slope: 网格中点的斜率；若Block为空，则slope=null
+        @param param: [k, b], y = k * x + b
         @param points: 网格中的数据点；若Block为空，则points=[]
         @param position: 网格的二维索引, [i， j]
         """
-        self.slope = slope
+        self.param = param
         self.points = points
         self.position = position
+
+    def get_slope(self):
+        return k2slope(self.param[0])
+
+    def get_intersections(self):
+        k = self.param[0]
+        b = self.param[1]
+        xy_lim = get_xy_lim(self.points)
+        x = [xy_lim[0], xy_lim[1], (xy_lim[2] - b) / k, (xy_lim[3] - b) / k]
+        x.sort()
+        return [[i, k * i + b] for i in x if x[0] < i < x[3]]
 
     def __str__(self):
         return str(self.position) + ": " + str(self.slope)
@@ -229,27 +237,31 @@ if __name__ == "__main__":
     blocks = marker.mark()
     
     # Plot
+    clamped = True # clamped为TRUE，则使用0，45，90，135度
     for row in blocks:
         for block in row:
-            cordinate = marker.pos2cordinate(block.position)
-            line_to_draw = []
-            if block.slope is None:
+            if block.param is None:
                 ax1.scatter([p[0] for p in block.points], [p[1] for p in block.points], s=1)
                 continue
-            elif block.slope == 0:
-                line_to_draw = [[cordinate[0], cordinate[1] + resolution / 2], \
-                    [cordinate[0] + resolution, cordinate[1] + resolution / 2]]
-            elif block.slope == 45:
-                line_to_draw = [cordinate, [cordinate[0] + resolution, cordinate[1] + resolution]]
-            elif block.slope == 90:
-                line_to_draw = [[cordinate[0] + resolution / 2, cordinate[1]], \
-                    [cordinate[0] + resolution / 2, cordinate[1] + resolution]]
-            elif block.slope == 135:
-                line_to_draw = [[cordinate[0], cordinate[1] + resolution], \
-                    [cordinate[0] + resolution, cordinate[1]]]
-            ax1.scatter([p[0] for p in block.points], [p[1] for p in block.points], s=1)
-            ax1.plot([i[0] for i in line_to_draw], [i[1] for i in line_to_draw], linewidth=1)
-
-    
+            else:
+                intersections = []
+                if clamped:
+                    cordinate = marker.pos2cordinate(block.position)
+                    slope = int(round(block.get_slope() / 45.0)) * 45 % 180
+                    if slope == 0:
+                        intersections = [[cordinate[0], cordinate[1] + resolution / 2], \
+                            [cordinate[0] + resolution, cordinate[1] + resolution / 2]]
+                    elif slope == 45:
+                        intersections = [cordinate, [cordinate[0] + resolution, cordinate[1] + resolution]]
+                    elif slope == 90:
+                        intersections = [[cordinate[0] + resolution / 2, cordinate[1]], \
+                            [cordinate[0] + resolution / 2, cordinate[1] + resolution]]
+                    elif slope == 135:
+                        intersections = [[cordinate[0], cordinate[1] + resolution], \
+                            [cordinate[0] + resolution, cordinate[1]]]
+                else: 
+                    intersections = block.get_intersections()
+                ax1.scatter([p[0] for p in block.points], [p[1] for p in block.points], s=1)
+                ax1.plot([i[0] for i in intersections], [i[1] for i in intersections], linewidth=1)
 
     plt.show()

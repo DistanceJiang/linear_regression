@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from utils import get_intersection, get_xy_lim
 from regression_control import SimpleRegressionController, RegressionController
 from points_divider import PointsDivider
+from linear_regressor import *
 
 """
 TODO:
@@ -16,10 +17,11 @@ TODO:
 verbose = True
 
 # Linear regression
-controller = SimpleRegressionController(path='four_walls.pcd', verbose=verbose, segments_count=1)
+controller = SimpleRegressionController(path='four_walls.pcd', verbose=verbose)
 divider = PointsDivider()
 controller.set_parts()
-controller.fit()
+reg = LinearRegressor()
+controller.fit(reg)
 
 # set figure
 padding = 0.2

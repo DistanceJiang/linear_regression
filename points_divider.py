@@ -2,9 +2,7 @@
 
 """
 ContinuousPart 为拟合需要调用的数据结构，每一个实例为一个需要单独拟合的点集
-slope 为这个实例中包含的点集与x轴正方向的夹角，角度制， 例如，45表示是45度， 80表示80度
 points 为一个二维数组，其中的数据为点的坐标，例如, [[1, 2], [3, 4]]表示两个点，坐标分别为(1, 2), (3, 4)
-block中没有点时，slope与points都为None
 """
 
 from block_marker import BlockMarker, Block
@@ -13,16 +11,14 @@ from Queue import Queue
 
 class ContinuousPart:
 
-    def __init__(self, slope, points):
+    def __init__(self, points):
         """
-        @param slope: int, slope of all the points
         @param points: points to fit
         """
-        self.slope = slope
         self.points = points
 
     def __str__(self):
-        return str(len(self.points)) + ": " + str(self.slope)
+        return str(len(self.points)) + "points"
 
     def __repr__(self):
         return str(self)
@@ -70,7 +66,7 @@ class PointsDivider(PointsDividerInterface):
         parts = []
         start = [0, 0]
         while (len(visited) < blocks_count):
-            part = ContinuousPart(None, [])
+            part = ContinuousPart([])
             q = Queue()
             q.put(start)
             while len(q) != 0:
@@ -88,7 +84,6 @@ class PointsDivider(PointsDividerInterface):
                             edge.remove(pos)
                     else:
                         edge.append(pos)
-            part.slope = get_slope(part.points)
             parts.append(part)
             start = edge[0]
             edge.remove(start)

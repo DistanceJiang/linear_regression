@@ -8,7 +8,7 @@ import numpy as np
 
 class RegressionController:
 
-    def __init__(self, path=None, segments_count=1, verbose=False):
+    def __init__(self, path=None, verbose=False):
         """
         Initialization
         @param path: pcd file path
@@ -16,9 +16,8 @@ class RegressionController:
         """
         if path is None: self.points = []
         else: self.points = [[i['x'], i['y']] for i in pypcd.PointCloud.from_path(path).pc_data]
-        self.segments_count = segments_count
         self.verbose = verbose
-        self.regressors = []
+        self.parameters = []
         self.parts = []
         self.intersections = []
 
@@ -33,9 +32,10 @@ class RegressionController:
     def set_points(self, points):
         self.points = points
 
-    def fit(self):
+    def fit(self, regressor):
         """
         Use linear regressor to fit the points
+        @param regressor: instance of regressor
         @return: list of intersection list
         """
         count = 1
@@ -43,11 +43,8 @@ class RegressionController:
         for part in self.parts:
             if self.verbose:
                 print("\n\n************************ Fitting part {} ************************".format(count))
-            regressor = SegmentedLinearRegressor(part, self.verbose)
-            self.regressors.append(regressor)
-            regressor.process(self.segments_count)            
-            regressor.get_intersections()
-            self.intersections.append(regressor.get_intersections())
+            self.intersections.append(regressor.process(part.points))
+            self.parameters.append(regressor.get_parameters())
             count += 1
 
     def set_parts(self, divider):
@@ -75,16 +72,12 @@ class SimpleRegressionController(RegressionController):
         count = 0
         for limit in limits:
             points = filter_points(self.points, limit[0], limit[1], limit[2], limit[3])
-            slope = 0
-            if count < 2: slope = 90
-            self.parts.append(ContinuousPart(slope, points)) 
+            self.parts.append(ContinuousPart(points)) 
             count += 1 
 
     def get_intersections(self):
-        if (len(self.regressors) == 0): raise Exception("No regression has been applied, please try to do a regression first.")
-        parameters = []
-        for reg in self.regressors:
-            parameters.append(reg.get_parameters()[0])
+        parameters = [p[0] for p in self.parameters]
+        print(parameters)
         points = []
         points.append(get_intersection(parameters[0], parameters[2]))
         points.append(get_intersection(parameters[0], parameters[3]))
