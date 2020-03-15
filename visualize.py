@@ -17,9 +17,9 @@ TODO:
 verbose = True
 
 # Linear regression
-controller = SimpleRegressionController(path='four_walls.pcd', verbose=verbose)
+controller = RegressionController(path='four_walls.pcd', verbose=verbose)
 divider = PointsDivider()
-controller.set_parts()
+controller.set_parts(divider)
 reg = LinearRegressor()
 controller.fit(reg)
 

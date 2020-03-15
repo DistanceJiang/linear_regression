@@ -84,7 +84,12 @@ def k2slope(k):
 
 def get_k_b(points):
     a, b, c = line_fit(points)
-    return - a / b, - c / b
+    if b != 0:
+        return - a / b, - c / b
+    elif a != 0:
+        return float('inf'), - c / a
+    else:
+        return float('inf'), float('inf')
 
 def line_fit(points):
     """

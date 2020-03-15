@@ -7,7 +7,7 @@ points 为一个二维数组，其中的数据为点的坐标，例如, [[1, 2],
 
 from block_marker import BlockMarker, Block
 from utils import get_points_from_pcd, get_slope
-from Queue import Queue
+from collections import deque
 
 class ContinuousPart:
 
@@ -44,7 +44,7 @@ class PointsDividerInterface:
         """
         blocks为包含block_marker.py中的Block的列表，包含对于小方格的标记
         """
-        marker = BlockMarker()
+        marker = BlockMarker(0.5)
         marker.set_points(self.points)
         self.blocks = marker.mark()
 
@@ -61,41 +61,71 @@ class PointsDivider(PointsDividerInterface):
     def divide(self):
         if (len(self.blocks) == 0): raise Exception("No blocks available, try to call set_blocks first.")
         blocks_count = len(self.blocks) * len(self.blocks[0])
-        visited = set()
-        edge = list()
+        visited = list()
+        edge = deque()
         parts = []
         start = [0, 0]
         while (len(visited) < blocks_count):
             part = ContinuousPart([])
-            q = Queue()
-            q.put(start)
+            q = deque()
+            q.append(start)
+            always_empty_block = True
             while len(q) != 0:
-                cur = q.get()
-                visited.add(cur)
+                cur = q.pop()
+                visited.append(cur)
                 part.points.extend(self.get_block(cur).points)
-                if self.get_block(cur).slope is None: continue
-                surroundings = get_surroundings(cur)
+                if self.get_block(cur).param is not None: always_empty_block = False
+                surroundings = self.get_surroundings(cur)
                 for pos in surroundings:
                     if pos in visited:
                         continue
-                    if is_connected(cur, pos):
-                        q.put(pos)
+                    if always_empty_block:
+                        q.append(pos)
+                        break
+                    if self.is_connected(cur, pos):
+                        if pos not in q:
+                            q.append(pos)
                         if pos in edge:
                             edge.remove(pos)
                     else:
-                        edge.append(pos)
-            parts.append(part)
-            start = edge[0]
-            edge.remove(start)
+                        if pos not in q and pos not in edge: edge.append(pos)
+            if len(part.points) != 0: parts.append(part)
+            if len(edge) != 0:
+                start = edge.pop()
+            else: break
         return parts
-
     
-    @staticmethod
-    def is_connected(block1, block2):
-        pass
+    def is_connected(self, pos1, pos2):
+        block1 = self.get_block(pos1)
+        block2 = self.get_block(pos2)
+        if (block1.param == None or block2.param == None): return False
+        slope1 = block1.get_slope()
+        slope2 = block2.get_slope()
+        total_points = []
+        total_points.extend(block1.points)
+        total_points.extend(block2.points)
+        slope = get_slope(total_points)
+        if (abs(slope - slope1) + abs(slope - slope2) > 135):
+            return False
+        return True
 
     def get_surroundings(self, pos):
-        pass
+        row = len(self.blocks)
+        col = len(self.blocks[0])
+
+        def valid(position):
+            if position == pos: return False
+            if 0 <= position[0] < row and 0 <= position[1] < col: return True
+            return False
+
+        surroundings = []
+        x_offset = 0
+        y_offset = 0
+        for x_offset in range(-1, 2):
+            for y_offset in range(-1, 2):
+                temp = [pos[0] + x_offset, pos[1] + y_offset]
+                if valid(temp): surroundings.append(temp)
+        return surroundings
         
 
 # Deprecated
@@ -202,6 +232,38 @@ class DeprecatedPointsDivider(PointsDividerInterface):
         return contiPart_list
 
 if __name__ == "__main__":
+    import matplotlib
+    matplotlib.use('TkAgg')
+    import matplotlib.pyplot as plt
+    from utils import get_points_from_pcd, get_xy_lim, get_slope
+    import numpy as np
+
+    def abline(slope, intercept):
+        """Plot a line from slope and intercept"""
+        axes = plt.gca()
+        x_vals = np.array(axes.get_xlim())
+        y_vals = intercept + slope * x_vals
+        plt.plot(x_vals, y_vals, '--')
+
+    points = get_points_from_pcd("four_walls.pcd")
+
+    padding = 0.2
+    xy_lim = get_xy_lim(points)
+    ratio = (xy_lim[3] - xy_lim[2]) / float(xy_lim[1] - xy_lim[0])
+    fig = plt.figure(figsize=(10 * ratio, 10))
+    ax1 = fig.add_subplot(1, 1, 1)
+    ax1.grid(True, linewidth=0.5, color='#666666', linestyle='dotted')
+    ax1.axis([xy_lim[0] - padding, xy_lim[1] + padding, xy_lim[2] - padding, xy_lim[3] + padding])
+    ax1.set_color_cycle(['red', 'black', 'blue', 'brown', 'green'])
+
     divider = PointsDivider()
-    divider.set_points(get_points_from_pcd('four_walls.pcd'))
-    print(divider.divide())
+    divider.set_points(points)
+    divider.set_blocks()
+    parts = divider.divide()
+    print(parts)
+    print(len(parts))
+
+    for part in parts:
+        ax1.scatter([i[0] for i in part.points], [i[1] for i in part.points], s=1)
+
+    plt.show()

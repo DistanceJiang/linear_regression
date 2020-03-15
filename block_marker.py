@@ -237,7 +237,7 @@ if __name__ == "__main__":
     blocks = marker.mark()
     
     # Plot
-    clamped = True # clamped为TRUE，则使用0，45，90，135度
+    clamped = False # clamped为TRUE，则使用0，45，90，135度
     for row in blocks:
         for block in row:
             if block.param is None:

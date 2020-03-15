@@ -54,10 +54,10 @@ class RegressionController:
         @return:
         """
         divider.set_points(self.points)
+        divider.set_blocks()
         self.parts = divider.divide()
 
     def get_intersections(self):
-        if (len(self.regressors) == 0): raise Exception("No regression has been applied, please try to do a regression first.")
         return self.intersections
 
 

@@ -157,12 +157,15 @@ class LinearRegressor(RegressorBase):
         k, b = get_k_b(points)
         self.parameters = [[k, b]]
         xy_lim = get_xy_lim(points)
-        if k != 0: 
+        if k == 0: 
+            return [[xy_lim[0], b], [xy_lim[1], b]]
+        elif k == float('inf') and b != float('inf'):
+            return [[b, xy_lim[2]], [b, xy_lim[3]]]
+        else:
             x = [xy_lim[0], xy_lim[1], (xy_lim[2] - b) / k, (xy_lim[3] - b) / k]
             x.sort()
             return [[i, k * i + b] for i in x if x[0] < i < x[3]]
-        else:
-            return [[xy_lim[0], b], [xy_lim[1], b]]
+            
 
 
 if __name__ == "__main__":
