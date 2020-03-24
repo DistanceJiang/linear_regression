@@ -6,8 +6,9 @@ points 为一个二维数组，其中的数据为点的坐标，例如, [[1, 2],
 """
 
 from block_marker import BlockMarker, Block
-from utils import get_points_from_pcd, get_slope
+from utils import get_points_from_pcd, get_slope, get_k_b, dist, k2slope
 from collections import deque
+from numpy import average
 
 class ContinuousPart:
 
@@ -33,6 +34,7 @@ class PointsDividerInterface:
     def __init__(self):
         self.blocks = []
         self.points = []
+        self.marker = None
 
     def set_points(self, points):
         """
@@ -44,9 +46,9 @@ class PointsDividerInterface:
         """
         blocks为包含block_marker.py中的Block的列表，包含对于小方格的标记
         """
-        marker = BlockMarker(0.5)
-        marker.set_points(self.points)
-        self.blocks = marker.mark()
+        self.marker = BlockMarker(float(1))
+        self.marker.set_points(self.points)
+        self.blocks = self.marker.mark()
 
     def get_block(self, pos):
         return self.blocks[pos[0]][pos[1]]
@@ -67,47 +69,76 @@ class PointsDivider(PointsDividerInterface):
         start = [0, 0]
         while (len(visited) < blocks_count):
             part = ContinuousPart([])
+            ks = [] # k of the blocks, y = k * x + b
             q = deque()
-            q.append(start)
-            always_empty_block = True
+            cur = start
+            # 在Block为空的地方漫游，直到找到第一个不为空的Block
+            while self.get_block(cur).param is None:
+                visited.append(cur)
+                surroundings = self.get_surroundings(cur)
+                for pos in surroundings:
+                    if pos not in edge and pos not in visited:
+                        edge.append(pos)
+                if len(edge) != 0: cur = edge.popleft()
+                else: return parts
+            # 找到不为空的Block，开始向part中填充点，并向四周扩张
+            q.append(cur)
             while len(q) != 0:
                 cur = q.pop()
                 visited.append(cur)
                 part.points.extend(self.get_block(cur).points)
-                if self.get_block(cur).param is not None: always_empty_block = False
                 surroundings = self.get_surroundings(cur)
-                for pos in surroundings:
-                    if pos in visited:
-                        continue
-                    if always_empty_block:
-                        q.append(pos)
-                        break
-                    if self.is_connected(cur, pos):
-                        if pos not in q:
-                            q.append(pos)
-                        if pos in edge:
-                            edge.remove(pos)
-                    else:
-                        if pos not in q and pos not in edge: edge.append(pos)
+                if self.get_block(cur).param is None: 
+                    for pos in surroundings:
+                        if pos not in edge and pos not in q and pos not in visited:
+                            edge.append(pos)
+                    continue
+                else:
+                    ks.append(self.get_block(cur).param[0])
+                    for pos in surroundings:
+                        if pos in visited:
+                            continue
+                        elif self.is_connected(cur, pos, ks):
+                            if pos not in q:
+                                q.append(pos)
+                            if pos in edge:
+                                edge.remove(pos)
+                        else:
+                            if pos not in q and pos not in edge: edge.append(pos)
             if len(part.points) != 0: parts.append(part)
             if len(edge) != 0:
-                start = edge.pop()
+                start = edge.popleft()
             else: break
         return parts
     
-    def is_connected(self, pos1, pos2):
+    def is_connected(self, pos1, pos2, ks):
+        """
+        Check if two blocks are connected.
+        @param pos1: position of first block
+        @param pos2: position of second block
+        @param ks: all the k of the blocks currently in that part
+        """
         block1 = self.get_block(pos1)
         block2 = self.get_block(pos2)
+
+        # 两个格子只要有一个是空，则认为不连接
         if (block1.param == None or block2.param == None): return False
-        slope1 = block1.get_slope()
+
+        # 若两个格子中的线的两个端点之间的距离最小值大于分辨率，则认为两个格子不连接
+        intersection1 = block1.get_intersections()
+        intersection2 = block2.get_intersections()
+        dists = []
+        for p1 in intersection1:
+            for p2 in intersection2:
+                dists.append(dist(p1, p2))
+        if min(dists) < self.marker.resolution / 3: return True
+
+        # 若pos2的方向与整体的方向差别过大，则认为pos2与整体不应该连接
         slope2 = block2.get_slope()
-        total_points = []
-        total_points.extend(block1.points)
-        total_points.extend(block2.points)
-        slope = get_slope(total_points)
-        if (abs(slope - slope1) + abs(slope - slope2) > 135):
-            return False
-        return True
+        slope = average([k2slope(k) for k in ks])
+        if abs(slope - slope2) < 45: return True
+
+        return False
 
     def get_surroundings(self, pos):
         row = len(self.blocks)
@@ -127,109 +158,6 @@ class PointsDivider(PointsDividerInterface):
                 if valid(temp): surroundings.append(temp)
         return surroundings
         
-
-# Deprecated
-class DeprecatedPointsDivider(PointsDividerInterface):
-
-    def divide(self):
-        self.set_blocks()
-        row = len(self.blocks)
-        col = len(self.blocks[0])
-        flag_lists = [[0 for i in range(col)] for j in range(row)]
-
-        def find_same(two_dimension_lists, x, y, sort_list):
-            if x < 0 or x >= row or y < 0 or y >= col:
-                return None
-            elif two_dimension_lists[x][y].points == None:
-                return None
-            elif two_dimension_lists[x][y].slope == 0:
-                if y > 0 and two_dimension_lists[x][y - 1].slope in [0, 45, 135] and flag_lists[x][y - 1] == 0:
-                    sort_list.append(two_dimension_lists[x][y - 1])
-                    flag_lists[x][y - 1] = 1
-                    find_same(two_dimension_lists, x, y - 1, sort_list)
-                if y < col - 1 and two_dimension_lists[x][y + 1].slope in [0, 45, 135] and flag_lists[x][y + 1] == 0:
-                    sort_list.append(two_dimension_lists[x][y + 1])
-                    flag_lists[x][y + 1] = 1
-                    find_same(two_dimension_lists, x, y + 1, sort_list)
-            elif two_dimension_lists[x][y].slope == 90:
-                if x > 0 and two_dimension_lists[x - 1][y].slope in [90, 45, 135] and flag_lists[x - 1][y] == 0:
-                    sort_list.append(two_dimension_lists[x - 1][y])
-                    flag_lists[x - 1][y] = 1
-                    find_same(two_dimension_lists, x - 1, y, sort_list)
-                if x < row - 1 and two_dimension_lists[x + 1][y].slope in [90, 45, 135] and flag_lists[x + 1][y] == 0:
-                    sort_list.append(two_dimension_lists[x + 1][y])
-                    flag_lists[x + 1][y] = 1
-                    find_same(two_dimension_lists, x + 1, y, sort_list)
-            elif two_dimension_lists[x][y].slope == 45:
-                if x > 0 and y < col - 1 and two_dimension_lists[x - 1][y + 1].slope == 45 and \
-                        flag_lists[x - 1][y + 1] == 0:
-                    sort_list.append(two_dimension_lists[x - 1][y + 1])
-                    flag_lists[x - 1][y + 1] = 1
-                    find_same(two_dimension_lists, x - 1, y + 1, sort_list)
-                if x < row - 1 and y > 0 and two_dimension_lists[x + 1][y - 1].slope == 45 and \
-                        flag_lists[x + 1][y - 1] == 0:
-                    sort_list.append(two_dimension_lists[x + 1][y - 1])
-                    flag_lists[x + 1][y - 1] = 1
-                    find_same(two_dimension_lists, x + 1, y - 1, sort_list)
-                if y > 0 and two_dimension_lists[x][y - 1].slope in [0, 135] and flag_lists[x][y - 1] == 0:
-                    sort_list.append(two_dimension_lists[x][y - 1])
-                    flag_lists[x][y - 1] = 1
-                    find_same(two_dimension_lists, x, y - 1, sort_list)
-                if y < col - 1 and two_dimension_lists[x][y + 1].slope in [0, 135] and flag_lists[x][y + 1] == 0:
-                    sort_list.append(two_dimension_lists[x][y + 1])
-                    flag_lists[x][y + 1] = 1
-                    find_same(two_dimension_lists, x, y + 1, sort_list)
-                if x > 0 and two_dimension_lists[x - 1][y].slope in [90, 135] and flag_lists[x - 1][y] == 0:
-                    sort_list.append(two_dimension_lists[x - 1][y])
-                    flag_lists[x - 1][y] = 1
-                    find_same(two_dimension_lists, x - 1, y, sort_list)
-                if x < row - 1 and two_dimension_lists[x + 1][y].slope in [90, 135] and flag_lists[x + 1][y] == 0:
-                    sort_list.append(two_dimension_lists[x + 1][y])
-                    flag_lists[x + 1][y] = 1
-                    find_same(two_dimension_lists, x + 1, y, sort_list)
-            elif two_dimension_lists[x][y].slope == 135:
-                if x > 0 and y > 0 and two_dimension_lists[x - 1][y - 1].slope == 135 and flag_lists[x - 1][y - 1] == 0:
-                    sort_list.append(two_dimension_lists[x - 1][y - 1])
-                    flag_lists[x - 1][y - 1] = 1
-                    find_same(two_dimension_lists, x - 1, y - 1, sort_list)
-                if x < row - 1 and y < col - 1 and two_dimension_lists[x + 1][y + 1].slope == 135 and \
-                        flag_lists[x + 1][y + 1] == 0:
-                    sort_list.append(two_dimension_lists[x + 1][y + 1])
-                    flag_lists[x + 1][y + 1] = 1
-                    find_same(two_dimension_lists, x + 1, y + 1, sort_list)
-                if y > 0 and two_dimension_lists[x][y - 1].slope in [0, 135] and flag_lists[x][y - 1] == 0:
-                    sort_list.append(two_dimension_lists[x][y - 1])
-                    flag_lists[x][y - 1] = 1
-                    find_same(two_dimension_lists, x, y - 1, sort_list)
-                if y < col - 1 and two_dimension_lists[x][y + 1].slope in [0, 45] and flag_lists[x][y + 1] == 0:
-                    sort_list.append(two_dimension_lists[x][y + 1])
-                    flag_lists[x][y + 1] = 1
-                    find_same(two_dimension_lists, x, y + 1, sort_list)
-                if x > 0 and two_dimension_lists[x - 1][y].slope in [90, 45] and flag_lists[x - 1][y] == 0:
-                    sort_list.append(two_dimension_lists[x - 1][y])
-                    flag_lists[x - 1][y] = 1
-                    find_same(two_dimension_lists, x - 1, y, sort_list)
-                if x < row - 1 and two_dimension_lists[x + 1][y].slope in [90, 45] and flag_lists[x + 1][y] == 0:
-                    sort_list.append(two_dimension_lists[x + 1][y])
-                    flag_lists[x + 1][y] = 1
-                    find_same(two_dimension_lists, x + 1, y, sort_list)
-
-        sort_lists = []
-        k = -1
-        for x in range(row):
-            for y in range(col):
-                if self.blocks[x][y].slope in [0, 90, 45, 135] and flag_lists[x][y] == 0:
-                    sort_lists.append([])
-                    k = k + 1
-                    find_same(self.blocks, x, y, sort_lists[k])
-        sort_lists = [t for t in sort_lists if t]
-        contiPart_list = []
-        for i in range(len(sort_lists)):
-            contiPart_list.append(ContinuousPart(0,[]))
-            for j in range(len(sort_lists[i])):
-                contiPart_list[i].points.extend(sort_lists[i][j].points)
-                contiPart_list[i].slope = get_slope(contiPart_list[i].points)
-        return contiPart_list
 
 if __name__ == "__main__":
     import matplotlib
@@ -263,7 +191,10 @@ if __name__ == "__main__":
     print(parts)
     print(len(parts))
 
-    for part in parts:
-        ax1.scatter([i[0] for i in part.points], [i[1] for i in part.points], s=1)
+    # for part in parts:
+    #     ax1.scatter([i[0] for i in part.points], [i[1] for i in part.points], s=1)
+
+    index = 6
+    ax1.scatter([i[0] for i in parts[index].points], [i[1] for i in parts[index].points], s=1)
 
     plt.show()

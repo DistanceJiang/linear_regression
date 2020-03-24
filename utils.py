@@ -91,6 +91,15 @@ def get_k_b(points):
     else:
         return float('inf'), float('inf')
 
+def dist(p1, p2):
+    return np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+
+def safe_divide(a, b):
+    while b < 1:
+        a *= 10
+        b *= 10
+    return a / b
+
 def line_fit(points):
     """
     并非一元线性回归，详见
