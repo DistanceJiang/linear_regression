@@ -1,0 +1,53 @@
+# coding=utf-8
+
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+from utils import get_intersection, get_xy_lim
+from regression_control import SimpleRegressionController, RegressionController
+from points_divider import PointsDivider
+from linear_regressor import *
+
+"""
+TODO:
+1. Maybe rewrite PointsDivider
+2. Put outliers inside boxes
+"""
+
+verbose = True
+
+# Linear regression
+controller = RegressionController(path='four_walls.pcd', verbose=verbose)
+divider = PointsDivider()
+controller.set_parts(divider)
+reg = LinearRegressor()
+controller.fit(reg)
+
+# set figure
+padding = 0.2
+xy_lim = get_xy_lim(controller.points)
+ratio = (xy_lim[3] - xy_lim[2]) / float(xy_lim[1] - xy_lim[0])
+fig = plt.figure(figsize=(10 * ratio, 10))
+fig.patch.set_facecolor('#000000')
+ax1 = fig.add_subplot(1, 1, 1)
+ax1.grid(True, linewidth=0.5, color='#999999', linestyle='dotted')
+ax1.set_facecolor('#000000')
+ax1.axis([xy_lim[0] - padding, xy_lim[1] + padding, xy_lim[2] - padding, xy_lim[3] + padding])
+
+# scatter points
+xy = controller.points
+xs = [i[0] for i in xy]
+ys = [i[1] for i in xy]
+ax1.scatter(xs, ys, color='red', s=1)
+
+# calculate intersections to plot
+intersections = controller.get_intersections()
+for points in intersections:
+    plt.plot([i[0] for i in points], [i[1] for i in points], color='pink', linewidth=15)
+
+# formatting the plot
+# ax1.text(-0.9, 3.85, 'Variance: {:8.4f}'.format(variance(regressor.points, regressor.parameters, regressor.segments)), fontsize=10)
+
+# ax1.set_title("Segmented Linear Regression(segments = {})".format(segments))
+# plt.savefig("Segemented_Linear_Regression_segments_{}.png".format(str(segments)), dpi=300)
+plt.show()
