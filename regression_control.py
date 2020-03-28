@@ -41,20 +41,21 @@ class RegressionController:
         count = 1
         if len(self.parts) == 0: raise Exception("Nothing to fit, check if set_parts() method is called.")
         for part in self.parts:
+            if part.isolated: continue
             if self.verbose:
                 print("\n\n************************ Fitting part {} ************************".format(count))
             self.intersections.append(regressor.process(part.points))
             self.parameters.append(regressor.get_parameters())
             count += 1
 
-    def set_parts(self, divider):
+    def set_parts(self, divider, resolution=1):
         """
         Divide all points into parts to fit
         @param divider: PointsDivider object, divide points into parts
         @return:
         """
         divider.set_points(self.points)
-        divider.set_blocks()
+        divider.set_blocks(resolution)
         self.parts = divider.divide()
 
     def get_intersections(self):

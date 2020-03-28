@@ -3,7 +3,7 @@
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
-from utils import get_intersection, get_xy_lim
+from utils import get_intersection, get_xy_lim, get_rectangle
 from regression_control import SimpleRegressionController, RegressionController
 from points_divider import PointsDivider
 from linear_regressor import *
@@ -19,7 +19,7 @@ verbose = True
 # Linear regression
 controller = RegressionController(path='four_walls.pcd', verbose=verbose)
 divider = PointsDivider()
-controller.set_parts(divider)
+controller.set_parts(divider, 0.5)
 reg = LinearRegressor()
 controller.fit(reg)
 
@@ -44,6 +44,13 @@ ax1.scatter(xs, ys, color='red', s=1)
 intersections = controller.get_intersections()
 for points in intersections:
     plt.plot([i[0] for i in points], [i[1] for i in points], color='pink', linewidth=15)
+
+# draw rectangle for isolated parts
+rects = [get_rectangle(p.points) for p in controller.parts if p.isolated]
+for rect in rects:
+    for edge in rect:
+        plt.plot([i[0] for i in edge], [i[1] for i in edge], color='pink', linewidth=4)
+
 
 # formatting the plot
 # ax1.text(-0.9, 3.85, 'Variance: {:8.4f}'.format(variance(regressor.points, regressor.parameters, regressor.segments)), fontsize=10)

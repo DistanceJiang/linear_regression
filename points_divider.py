@@ -12,11 +12,13 @@ from numpy import average
 
 class ContinuousPart:
 
-    def __init__(self, points):
+    def __init__(self, points, isolated):
         """
         @param points: points to fit
+        @param isolated: whether this part is isolated
         """
         self.points = points
+        self.isolated = isolated
 
     def __str__(self):
         return str(len(self.points)) + "points"
@@ -42,11 +44,11 @@ class PointsDividerInterface:
         """
         self.points = points
 
-    def set_blocks(self):
+    def set_blocks(self, resolution = 1):
         """
         blocks为包含block_marker.py中的Block的列表，包含对于小方格的标记
         """
-        self.marker = BlockMarker(float(1))
+        self.marker = BlockMarker(resolution)
         self.marker.set_points(self.points)
         self.blocks = self.marker.mark()
 
@@ -66,10 +68,12 @@ class PointsDivider(PointsDividerInterface):
         visited = list()
         edge = deque()
         parts = []
+        non_isolated_blocks = []
         start = [0, 0]
         while (len(visited) < blocks_count):
-            part = ContinuousPart([])
-            ks = [] # k of the blocks, y = k * x + b
+            part = ContinuousPart([], True)
+            isolated = True
+            slopes = []
             q = deque()
             cur = start
             # 在Block为空的地方漫游，直到找到第一个不为空的Block
@@ -86,6 +90,7 @@ class PointsDivider(PointsDividerInterface):
             while len(q) != 0:
                 cur = q.pop()
                 visited.append(cur)
+                if cur in non_isolated_blocks: isolated = False
                 part.points.extend(self.get_block(cur).points)
                 surroundings = self.get_surroundings(cur)
                 if self.get_block(cur).param is None: 
@@ -94,29 +99,34 @@ class PointsDivider(PointsDividerInterface):
                             edge.append(pos)
                     continue
                 else:
-                    ks.append(self.get_block(cur).param[0])
+                    slopes.append(k2slope(self.get_block(cur).param[0]))
                     for pos in surroundings:
                         if pos in visited:
                             continue
-                        elif self.is_connected(cur, pos, ks):
+                        elif self.is_connected(cur, pos, slopes):
                             if pos not in q:
                                 q.append(pos)
                             if pos in edge:
                                 edge.remove(pos)
                         else:
                             if pos not in q and pos not in edge: edge.append(pos)
-            if len(part.points) != 0: parts.append(part)
+                            if self.get_block(pos).param is not None and pos not in non_isolated_blocks:
+                                isolated = False
+                                non_isolated_blocks.append(pos)
+            if len(part.points) != 0: 
+                part.isolated = isolated
+                parts.append(part)
             if len(edge) != 0:
                 start = edge.popleft()
             else: break
         return parts
     
-    def is_connected(self, pos1, pos2, ks):
+    def is_connected(self, pos1, pos2, slopes):
         """
         Check if two blocks are connected.
         @param pos1: position of first block
         @param pos2: position of second block
-        @param ks: all the k of the blocks currently in that part
+        @param slopes: the slope of the blocks currently in that part
         """
         block1 = self.get_block(pos1)
         block2 = self.get_block(pos2)
@@ -124,7 +134,7 @@ class PointsDivider(PointsDividerInterface):
         # 两个格子只要有一个是空，则认为不连接
         if (block1.param == None or block2.param == None): return False
 
-        # 若两个格子中的线的两个端点之间的距离最小值大于分辨率，则认为两个格子不连接
+        # 若两个格子中的线的两个端点之间的距离最小值小于一个阈值，则认为两个格子应该连接
         intersection1 = block1.get_intersections()
         intersection2 = block2.get_intersections()
         dists = []
@@ -133,9 +143,9 @@ class PointsDivider(PointsDividerInterface):
                 dists.append(dist(p1, p2))
         if min(dists) < self.marker.resolution / 3: return True
 
-        # 若pos2的方向与整体的方向差别过大，则认为pos2与整体不应该连接
+        # 若pos2的方向与整体的方向差别小于一个阈值，则认为pos2与整体应该连接
         slope2 = block2.get_slope()
-        slope = average([k2slope(k) for k in ks])
+        slope = average(slopes)
         if abs(slope - slope2) < 45: return True
 
         return False
@@ -186,15 +196,16 @@ if __name__ == "__main__":
 
     divider = PointsDivider()
     divider.set_points(points)
-    divider.set_blocks()
+    divider.set_blocks(0.5)
     parts = divider.divide()
     print(parts)
+    print([p.isolated for p in parts])
     print(len(parts))
 
-    # for part in parts:
-    #     ax1.scatter([i[0] for i in part.points], [i[1] for i in part.points], s=1)
+    for part in parts:
+        ax1.scatter([i[0] for i in part.points], [i[1] for i in part.points], s=1)
 
-    index = 6
-    ax1.scatter([i[0] for i in parts[index].points], [i[1] for i in parts[index].points], s=1)
+    # index = 6
+    # ax1.scatter([i[0] for i in parts[index].points], [i[1] for i in parts[index].points], s=1)
 
     plt.show()

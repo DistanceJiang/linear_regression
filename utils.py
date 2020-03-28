@@ -39,6 +39,16 @@ def get_xy_lim(points):
     y = [i[1] for i in points]
     return [min(x), max(x), min(y), max(y)]
 
+def get_rectangle(points):
+    xy_lim = get_xy_lim(points)
+    four_points = [[xy_lim[0], xy_lim[2]], [xy_lim[1], xy_lim[2]], [xy_lim[1], xy_lim[3]], [xy_lim[0], xy_lim[3]]]
+    edges = [[four_points[i], four_points[(i + 1) % 4]] for i  in range(4)]
+    return edges
+
+def get_area(points):
+    xy_lim = get_xy_lim(points)
+    return (xy_lim[1] - xy_lim[0]) * (xy_lim[3] - xy_lim[2])
+
 def get_rotation_matrix(deg):
     # counter-clockwise rotation matrix
     theta = np.radians(deg)
