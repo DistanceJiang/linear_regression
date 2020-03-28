@@ -5,6 +5,7 @@ from utils import *
 import numpy as np
 import sys
 from math import floor, ceil
+from scipy.optimize import curve_fit
 
 """
 TODO:
@@ -165,7 +166,38 @@ class LinearRegressor(RegressorBase):
             x = [xy_lim[0], xy_lim[1], (xy_lim[2] - b) / k, (xy_lim[3] - b) / k]
             x.sort()
             return [[i, k * i + b] for i in x if x[0] < i < x[3]]
-            
+class GaussianRegressor(RegressorBase):
+    def __init__(self, verbose=False):
+        self.parameters = [] # y = k * x + b, [k, b]
+        self.verbose = verbose
+        self.X_points=[]
+        self.Y_points=[]
+    def process(self,points):
+        #print("%%%%%%%%%%%%%%%%",len(points))
+        self.X_points=[]
+        self.Y_points=[]
+        for i in range(len(points)):
+            self.X_points.append(points[i][0])
+            self.Y_points.append(points[i][1])
+        #print("self.X_points长度：",len(self.X_points))
+        #print(self.X_points)
+        #print("points:",points)
+        #a,u,sig=get_param() 
+        #controller = GaussianController(path='four_walls.pcd', verbose=verbose)
+        #parts=controller.get_parts()
+        #for part in parts:
+        X_array=np.array(self.X_points)
+        Y_array=np.array(self.Y_points)
+        if (0<get_slope(points) and get_slope(points)<45) or (135<get_slope(points) and get_slope(points)<180): 
+            popt, pcov = curve_fit(self.gaussian_mix, X_array,Y_array,maxfev=500000)
+            return [popt[0],popt[1],popt[2]]
+        else:
+            popt, pcov = curve_fit(self.gaussian_mix, Y_array, X_array,maxfev=500000)
+            return [popt[0],popt[1],popt[2]]
+    def gaussian_mix(self,x,a,u,sig):
+        return a * np.exp(-((x - u) / sig) ** 2)        
+    def get_X_points(self):
+        return self.X_points       
 
 
 if __name__ == "__main__":
