@@ -47,10 +47,10 @@ def get_rectangle(points):
 
 def get_area(points):
     xy_lim = get_xy_lim(points)
-    return (xy_lim[1] - xy_lim[0]) * (xy_lim[3] - xy_lim[2])
+    return abs((xy_lim[1] - xy_lim[0]) * (xy_lim[3] - xy_lim[2]))
 
 def get_rotation_matrix(deg):
-    # counter-clockwise rotation matrix
+    # counter-clockwise rotation matrix, center is (0, 0)
     theta = np.radians(deg)
     c, s = np.cos(theta), np.sin(theta)
     R = np.array([[c, -s], [s, c]])
@@ -80,6 +80,19 @@ def scale_points(points, ratio):
         p[1] *= ratio
     return points
 
+def rotate_points(points, angle):
+    """
+    @param points: points to rotate
+    @param angle: degree, angle to rotate, counter clockwise, rotation origin is (0, 0)
+    @return points after rotation
+    """
+    R = get_rotation_matrix(angle)
+    new_points = []
+    for p in points:
+            vec = np.array([p[0],p[1]])
+            new_points.append(list(R.dot(vec)))
+    return new_points
+    
 def get_slope(points):
     """
     Calculate the overall slope for points, 0 ~ 180
@@ -103,6 +116,12 @@ def get_k_b(points):
 
 def dist(p1, p2):
     return np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+
+def dist_point2line(p, line):
+    a = line[0]
+    b = -1
+    c = line[1]
+    return (a*p[0] + b*p[1] + c) / np.sqrt(a**2 + b**2)
 
 def safe_divide(a, b):
     while b < 1:
@@ -136,6 +155,4 @@ def line_fit(points):
 
 
 if __name__ == "__main__":
-    points = get_points_from_pcd('four_walls.pcd')
-    points = filter_points(points, 4, 5, 2, 3)
-    print(get_slope(points))
+    print(dist_point2line([0, 0], [0, 2]))

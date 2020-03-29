@@ -49,7 +49,7 @@ for points in intersections:
 rects = [get_rectangle(p.points) for p in controller.parts if p.isolated]
 for rect in rects:
     for edge in rect:
-        plt.plot([i[0] for i in edge], [i[1] for i in edge], color='pink', linewidth=4)
+        plt.plot([i[0] for i in edge], [i[1] for i in edge], color='pink', linewidth=3)
 
 
 # formatting the plot

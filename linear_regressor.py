@@ -165,7 +165,6 @@ class LinearRegressor(RegressorBase):
             x = [xy_lim[0], xy_lim[1], (xy_lim[2] - b) / k, (xy_lim[3] - b) / k]
             x.sort()
             return [[i, k * i + b] for i in x if x[0] < i < x[3]]
-            
 
 
 if __name__ == "__main__":
