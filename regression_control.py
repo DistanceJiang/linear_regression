@@ -61,7 +61,46 @@ class RegressionController:
     def get_intersections(self):
         return self.intersections
 
-
+class GaussianController:
+    def __init__(self, path=None, verbose=False):
+        """
+        Initialization
+        @param path: pcd file path
+        @param verbose: if True, print more information in the console
+        """
+        if path is None: self.points = []
+        else: self.points = [[i['x'], i['y']] for i in pypcd.PointCloud.from_path(path).pc_data]
+        self.verbose = verbose
+        self.parameters = []
+        self.parts = []
+    def fit(self, regressor):
+        """
+        Use linear regressor to fit the points
+        @param regressor: instance of regressor
+        """
+        count = 1
+        if len(self.parts) == 0: raise Exception("Nothing to fit, check if set_parts() method is called.")
+        for part in self.parts:
+            #print("$$$$$$$$$$$$$$$",len(part.points))
+            if self.verbose:
+                print("\n\n************************ Fitting part {} ************************".format(count))
+            self.parameters.append(regressor.process(part.points))
+            count += 1
+        #print(self.parameters)   
+            
+    def set_parts(self, divider):
+        """
+        Divide all points into parts to fit
+        @param divider: PointsDivider object, divide points into parts
+        @return:
+        """
+        divider.set_points(self.points)
+        divider.set_blocks()
+        self.parts = divider.divide()
+    def get_parts(self):
+        return self.parts
+    def get_param(self):
+        return self.parameters
 class SimpleRegressionController(RegressionController):
     # Manually marked region to fit
         
