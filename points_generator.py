@@ -19,7 +19,6 @@ class PointsGenerator:
         reg = LinearRegressor()
         controller.fit(reg)
         result = []
-        print(controller.parameters)
         
         for part, param, ends in zip(controller.parts, controller.parameters, controller.intersections):
             if not part.isolated: 
@@ -34,8 +33,9 @@ class PointsGenerator:
         @return: points generated to mimic the line
         """
         length = dist(ends[0], ends[1])
-        linewidth *= self.intensity
-        points = [[j / self.intensity, i / self.intensity] for i in range(int(round(-linewidth / 2.0)), int(round(linewidth / 2.0))) for j in range(int(length * self.intensity))]
+        row = int(round(linewidth * self.intensity))
+        col = int(round(length * self.intensity))
+        points = [[i / self.intensity + linewidth / 2.0, j / self.intensity] for i in range(col) for j in range(row)]
         points = rotate_points(points, k2slope(line[0]))
         lower_end = []
         if ends[0][1] < ends[1][1]:
@@ -50,7 +50,7 @@ class PointsGenerator:
         b = -1
         c = line[1]
         temp = sum([abs(a * p[0] + b * p[1] + c) for p in points])
-        return temp / np.sqrt(a ** 2 + 1) / len(points) * 2
+        return temp / np.sqrt(a ** 2 + 1) / len(points) * 2.0
 
 
 if __name__ == "__main__":
@@ -58,36 +58,21 @@ if __name__ == "__main__":
     matplotlib.use('TkAgg')
     import matplotlib.pyplot as plt
 
-    generator = PointsGenerator(20)
-    source_points = get_points_from_pcd('four_walls.pcd')
+    generator = PointsGenerator(30)
+    source_points = get_points_from_pcd('0.pcd')
     points = generator.generate(source_points)
-    # divider = PointsDivider()
-    # controller = RegressionController('four_walls.pcd')
-    # controller.set_parts(divider, 0.5)
-    # reg = LinearRegressor()
-    # controller.fit(reg)
-    # index = 6
-    # line = controller.parameters[index][0]
-    # ends = controller.intersections[index]
-    # linewidth = generator.get_linewidth(controller.parts[index].points, line)
-    # print(line, ends, linewidth)
-    # points = generator.generate_for_line(line, ends, linewidth)
 
     padding = 0.2
-    # print(points)
     xy_lim = get_xy_lim(source_points)
     ratio = (xy_lim[3] - xy_lim[2]) / float(xy_lim[1] - xy_lim[0])
     fig = plt.figure(figsize=(10 * ratio, 10))
-    # fig = plt.figure(figsize=(10, 10))
     fig.patch.set_facecolor('#000000')
     ax1 = fig.add_subplot(1, 1, 1)
     ax1.grid(True, linewidth=0.5, color='#999999', linestyle='dotted')
     ax1.set_facecolor('#000000')
     ax1.axis([xy_lim[0] - padding, xy_lim[1] + padding, xy_lim[2] - padding, xy_lim[3] + padding])
-    # ax1.axis([-4, 4, -4, 4])
 
     ax1.scatter([p[0] for p in points], [p[1] for p in points], c='blue', s=1)
-    # ax1.scatter([p[0] for p in controller.parts[index].points], [p[1] for p in controller.parts[index].points], c='red', s=1)
     ax1.scatter([0], [0], c='white', s=4)
 
     plt.show()

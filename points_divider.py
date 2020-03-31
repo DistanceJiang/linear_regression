@@ -145,7 +145,7 @@ class PointsDivider(PointsDividerInterface):
 
         # 若pos2的方向与整体的方向差别小于一个阈值，则认为pos2与整体应该连接
         slope2 = block2.get_slope()
-        slope = average(slopes)
+        slope = average(slopes[len(slopes) / 3 : len(slopes) / 3 * 2])
         if abs(slope - slope2) < 45: return True
 
         return False
