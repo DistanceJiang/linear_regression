@@ -14,7 +14,7 @@ class BlockMarkerInterface:
     """
     需要实现这个接口，来对点进行标记
     """
-    LOWEST_POINTS_COUNT = 10
+    LOWEST_POINTS_COUNT = 10 # 若Block中的点的数量少于这个，则将其忽略，不参与下一步的divide
 
     def __init__(self, resolution=1):
         """
@@ -74,7 +74,7 @@ class BlockMarker(BlockMarkerInterface):
 class Block:
 
     """
-    BlockMarker的输出，包含一个网格中的数据点，网格的位置（实际上是网格在二维数组中的二维索引），网格中点的斜率
+    是BlockMarker的输出，包含一个网格中的数据点，网格的位置（实际上是网格在二维数组中的二维索引），网格中的点拟合线的参数
     """
 
     def __init__(self, param, points, position):

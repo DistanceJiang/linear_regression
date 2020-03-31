@@ -155,4 +155,4 @@ def line_fit(points):
 
 
 if __name__ == "__main__":
-    print(dist_point2line([0, 0], [0, 2]))
+    print(dist_point2line([0, 0], [1, 2]))

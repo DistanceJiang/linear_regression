@@ -43,7 +43,7 @@ ax1.scatter(xs, ys, color='red', s=1)
 # calculate intersections to plot
 intersections = controller.get_intersections()
 for points in intersections:
-    plt.plot([i[0] for i in points], [i[1] for i in points], color='pink', linewidth=15)
+    if points is not None: plt.plot([i[0] for i in points], [i[1] for i in points], color='pink', linewidth=15)
 
 # draw rectangle for isolated parts
 rects = [get_rectangle(p.points) for p in controller.parts if p.isolated]

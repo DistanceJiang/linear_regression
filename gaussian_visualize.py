@@ -7,7 +7,6 @@ from utils import get_intersection, get_xy_lim
 from regression_control import SimpleRegressionController, RegressionController
 from points_divider import PointsDivider
 from linear_regressor import *
-from regression_control import GaussianController
 from utils import get_slope
 
 """
@@ -19,7 +18,7 @@ TODO:
 verbose = True
 
 # Linear regression
-controller = GaussianController(path='four_walls.pcd', verbose=verbose)
+controller = RegressionController(path='four_walls.pcd', verbose=verbose)
 divider = PointsDivider()
 controller.set_parts(divider)
 gau = GaussianRegressor()
@@ -47,8 +46,8 @@ ys = [i[1] for i in xy]
 ax1.scatter(xs, ys, color='red', s=1)
 
 #plot gaussian picture
-parts=controller.get_parts()
-param=controller.get_param()
+parts=controller.parts
+param=controller.parameters
 #print(param)
 #print(len(param))
 #print(parts)
