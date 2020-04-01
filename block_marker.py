@@ -1,6 +1,6 @@
 # coding=utf-8
 import numpy as np
-from utils import get_points_from_pcd, get_xy_lim, filter_points, get_slope, k2slope
+from utils import get_points_from_pcd, get_xy_lim, filter_points, get_slope, k2slope, get_area
 import math
 from math import ceil
 from linear_regressor import LinearRegressor
@@ -86,6 +86,18 @@ class Block:
         self.param = param
         self.points = points
         self.position = position
+        self.center = None
+        self.density = None
+
+    def get_center(self):
+        if self.center is None: 
+            self.center = [np.average([p[0] for p in self.points]), np.average([p[1] for p in points])]
+        return self.center
+
+    def get_density(self):
+        if self.density is None: 
+            return len(self.points) / get_area(self.points)
+        return self.density
 
     def get_slope(self):
         return k2slope(self.param[0])
