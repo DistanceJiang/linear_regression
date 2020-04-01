@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 import random
+from scipy import special
 
 def get_points_from_pcd(path):
     return [[i['x'], i['y']] for i in pypcd.PointCloud.from_path(path).pc_data]
@@ -153,6 +154,14 @@ def line_fit(points):
     c = - a * x_mean - b * y_mean
     return a, b, c
 
+def get_gaussian_weight(n):
+    weights = [0 for i in range(n)]
+    sum = float(1 << n)
+    for i in range((n + 1) / 2):
+        weight = special.binom(n, i) / sum
+        weights[i] = weight
+        weights[n - 1 - i] = weight
+    return weights
 
 if __name__ == "__main__":
-    print(dist_point2line([0, 0], [1, 2]))
+    print(get_gaussian_weight(7))

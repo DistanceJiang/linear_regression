@@ -6,9 +6,10 @@ points 为一个二维数组，其中的数据为点的坐标，例如, [[1, 2],
 """
 
 from block_marker import BlockMarker, Block
-from utils import get_points_from_pcd, get_slope, get_k_b, dist, k2slope
+from utils import get_points_from_pcd, get_slope, get_k_b, dist, k2slope, get_gaussian_weight
 from collections import deque
 from numpy import average
+from scipy import special
 
 class ContinuousPart:
 
@@ -109,7 +110,9 @@ class PointsDivider(PointsDividerInterface):
                             if pos in edge:
                                 edge.remove(pos)
                         else:
-                            if pos not in q and pos not in edge: edge.append(pos)
+                            if pos not in q and pos not in edge: 
+                                if isolated: part.points.extend(self.get_block(pos).points)
+                                edge.append(pos)
                             if self.get_block(pos).param is not None and pos not in non_isolated_blocks:
                                 isolated = False
                                 non_isolated_blocks.append(pos)
@@ -141,11 +144,14 @@ class PointsDivider(PointsDividerInterface):
         for p1 in intersection1:
             for p2 in intersection2:
                 dists.append(dist(p1, p2))
-        if min(dists) < self.marker.resolution / 3: return True
+        dists.sort()
+        if dists[0] < self.marker.resolution / 3.0: return True
+        if (dists[0] + dists[1]) / 2.0 < self.marker.resolution / 2.0: return True
 
         # 若pos2的方向与整体的方向差别小于一个阈值，则认为pos2与整体应该连接
         slope2 = block2.get_slope()
-        slope = average(slopes[len(slopes) / 3 : len(slopes) / 3 * 2])
+        weights = get_gaussian_weight(len(slopes)) # 使用高斯加权平均获取当前part的平均倾角
+        slope = sum([i * j for i, j in zip(slopes, weights)])
         if abs(slope - slope2) < 45: return True
 
         return False
@@ -183,7 +189,7 @@ if __name__ == "__main__":
         y_vals = intercept + slope * x_vals
         plt.plot(x_vals, y_vals, '--')
 
-    points = get_points_from_pcd("four_walls.pcd")
+    points = get_points_from_pcd("0.pcd")
 
     padding = 0.2
     xy_lim = get_xy_lim(points)
